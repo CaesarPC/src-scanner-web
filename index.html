@@ -250,28 +250,25 @@ async function runLayer(num){
   if(num<=2){
     var paths=num===1?L1:L2;
     var total=paths.length;
-    for(var i=0;i<total;i++){
-      var p=paths[i];
-      document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描 '+p+' ('+(i+1)+'/'+total+')';
-      var res=await checkPath(base+p);
-      // 只认200，其他全跳过（401/403/429可能是代理问题）
-      if(!res||res.status!==200){document.getElementById('bar').style.width=((i+1)/total*100)+'%';continue}
-      var body=res.text||'';
-      // 软404过滤：和主页内容高度相似就跳过
-      if(homeText&&body){
-        var sim=similarity(homeText,body);
-        if(sim>0.7)continue; // 70%以上相似=软404
-      }
-      // 内容太短或包含错误页特征
-      if(body.length<50)continue;
-      if(/404 not found|page not found|页面不存在|找不到页面|404错误/i.test(body.slice(0,1000)))continue;
-      // 代理错误页
-      if(/codetabs|corsproxy|cors proxy|502 bad gateway|503/i.test(body.slice(0,500)))continue;
-      var sev='low';
-      if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
-      else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
-      findings[num].push({path:p,url:base+p,status:res.status,severity:sev});
-      document.getElementById('bar').style.width=((i+1)/total*100)+'%';
+    var BATCH=10;
+    for(var i=0;i<total;i+=BATCH){
+      var batch=paths.slice(i,i+BATCH);
+      document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描中... ('+Math.min(i+BATCH,total)+'/'+total+')';
+      var results=await Promise.all(batch.map(async function(p){
+        var res=await checkPath(base+p);
+        if(!res||res.status!==200)return null;
+        var body=res.text||'';
+        if(homeText&&body&&similarity(homeText,body)>0.7)return null;
+        if(body.length<50)return null;
+        if(/404 not found|page not found|页面不存在|找不到页面|404错误/i.test(body.slice(0,1000)))return null;
+        if(/codetabs|corsproxy|cors proxy|502 bad gateway|503/i.test(body.slice(0,500)))return null;
+        var sev='low';
+        if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
+        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
+        return {path:p,url:base+p,status:res.status,severity:sev};
+      }));
+      results.filter(Boolean).forEach(function(r){findings[num].push(r)});
+      document.getElementById('bar').style.width=(Math.min(i+BATCH,total)/total*100)+'%';
       renderLayers();
     }
   } else {
