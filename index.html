@@ -232,6 +232,11 @@ async function runLayer(num){
   document.getElementById('btnAll').disabled=true;
   findings[num]=[];
 
+  // 先获取主页大小作为软404对比基准
+  var homeSize=0;
+  var homeRes=await checkPath(base+'/');
+  if(homeRes)homeSize=(homeRes.text||'').length;
+
   if(num<=2){
     var paths=num===1?L1:L2;
     var total=paths.length;
@@ -239,12 +244,16 @@ async function runLayer(num){
       var p=paths[i];
       document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描 '+p+' ('+(i+1)+'/'+total+')';
       var res=await checkPath(base+p);
-      if(res&&res.status!==404){
+      // 只报200，403多半是代理限流不是真漏洞
+      if(res&&res.status===200){
+        var bodyLen=(res.text||'').length;
+        // 软404检测：内容和主页几乎一样大，说明是SPA回退不是真文件
+        if(homeSize>0&&Math.abs(bodyLen-homeSize)<200)continue;
+        // 内容里有404字样也跳过
+        if(/404|not found|页面不存在|找不到/.test(res.text||'').slice(0,500))continue;
         var sev='low';
-        if(res.status===200){
-          if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
-          else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
-        } else if(res.status===401||res.status===403) sev='info';
+        if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
+        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
         findings[num].push({path:p,url:base+p,status:res.status,severity:sev});
       }
       document.getElementById('bar').style.width=((i+1)/total*100)+'%';
