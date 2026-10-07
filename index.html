@@ -224,6 +224,16 @@ async function checkPath(url){
   return null;
 }
 
+// 简单文本相似度：比较前500字符的共同字符比例
+function similarity(a,b){
+  if(!a||!b)return 0;
+  a=a.slice(0,500);b=b.slice(0,500);
+  if(a===b)return 1;
+  var setA={};for(var i=0;i<a.length;i++)setA[a[i]]=1;
+  var common=0;for(var j=0;j<b.length;j++)if(setA[b[j]])common++;
+  return common/Math.max(a.length,b.length);
+}
+
 async function runLayer(num){
   var target=document.getElementById('target').value.trim();
   if(!target){alert('请输入网址');return}
@@ -232,10 +242,10 @@ async function runLayer(num){
   document.getElementById('btnAll').disabled=true;
   findings[num]=[];
 
-  // 先获取主页大小作为软404对比基准
-  var homeSize=0;
+  // 先抓主页作为对比基准
+  var homeText='';
   var homeRes=await checkPath(base+'/');
-  if(homeRes)homeSize=(homeRes.text||'').length;
+  if(homeRes)homeText=homeRes.text||'';
 
   if(num<=2){
     var paths=num===1?L1:L2;
@@ -244,18 +254,23 @@ async function runLayer(num){
       var p=paths[i];
       document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描 '+p+' ('+(i+1)+'/'+total+')';
       var res=await checkPath(base+p);
-      // 只报200，403多半是代理限流不是真漏洞
-      if(res&&res.status===200){
-        var bodyLen=(res.text||'').length;
-        // 软404检测：内容和主页几乎一样大，说明是SPA回退不是真文件
-        if(homeSize>0&&Math.abs(bodyLen-homeSize)<200)continue;
-        // 内容里有404字样也跳过
-        if(/404|not found|页面不存在|找不到/.test(res.text||'').slice(0,500))continue;
-        var sev='low';
-        if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
-        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
-        findings[num].push({path:p,url:base+p,status:res.status,severity:sev});
+      // 只认200，其他全跳过（401/403/429可能是代理问题）
+      if(!res||res.status!==200){document.getElementById('bar').style.width=((i+1)/total*100)+'%';continue}
+      var body=res.text||'';
+      // 软404过滤：和主页内容高度相似就跳过
+      if(homeText&&body){
+        var sim=similarity(homeText,body);
+        if(sim>0.7)continue; // 70%以上相似=软404
       }
+      // 内容太短或包含错误页特征
+      if(body.length<50)continue;
+      if(/404 not found|page not found|页面不存在|找不到页面|404错误/i.test(body.slice(0,1000)))continue;
+      // 代理错误页
+      if(/codetabs|corsproxy|cors proxy|502 bad gateway|503/i.test(body.slice(0,500)))continue;
+      var sev='low';
+      if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
+      else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
+      findings[num].push({path:p,url:base+p,status:res.status,severity:sev});
       document.getElementById('bar').style.width=((i+1)/total*100)+'%';
       renderLayers();
     }
