@@ -93,6 +93,37 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
       <button onclick="runLayer(1)" id="btn1">浅层(100)</button>
       <button onclick="runLayer(2)" id="btn2">中层(150)</button>
       <button onclick="runLayer(3)" id="btn3">深层(50)</button>
+      <button onclick="toggleGuide()" id="btnGuide" style="background:#2d6a4f">靶机指南</button>
+    </div>
+    <div id="guideBox" style="display:none;background:#1a1d27;border-radius:8px;padding:16px;margin-bottom:16px">
+      <h3 style="color:#fff;font-size:15px;margin-bottom:12px">靶机/练习平台推荐</h3>
+      <div style="font-size:13px;line-height:1.8;color:#aaa">
+        <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">1. PortSwigger Web Security Academy（首选）</p>
+        <p>网址：<a href="https://portswigger.net/web-security" target="_blank" style="color:#4f8cff">portswigger.net/web-security</a></p>
+        <p style="color:#888;font-size:12px">免费、浏览器直接打、从学徒到专家。先做SQL injection → Access control → Information disclosure</p>
+        <p style="color:#888;font-size:12px;margin-bottom:8px">第一个lab：<a href="https://portswigger.net/web-security/sql-injection/lab-retrieve-hidden-data" target="_blank" style="color:#4f8cff">SQL injection in WHERE clause</a></p>
+
+        <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">2. TryHackMe</p>
+        <p>网址：<a href="https://tryhackme.com" target="_blank" style="color:#4f8cff">tryhackme.com</a></p>
+        <p style="color:#888;font-size:12px;margin-bottom:8px">有中文，新手引导好，像做任务一样一步步教</p>
+
+        <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">3. PentesterLab</p>
+        <p>网址：<a href="https://pentesterlab.com" target="_blank" style="color:#4f8cff">pentesterlab.com</a></p>
+        <p style="color:#888;font-size:12px;margin-bottom:8px">免费练习SQLi/XSS/文件包含/反序列化</p>
+
+        <p style="color:#ffa502;font-weight:bold;margin-bottom:4px">4. DVWA（本地装）</p>
+        <p style="color:#888;font-size:12px;margin-bottom:8px">下载Docker：docker pull vulnerables/web-dvwa，12种漏洞类型</p>
+
+        <p style="color:#ffa502;font-weight:bold;margin-bottom:4px">5. OWASP Juice Shop（本地装）</p>
+        <p style="color:#888;font-size:12px;margin-bottom:8px">docker pull bkimminich/juice-shop，Node.js写的现代应用</p>
+
+        <hr style="border-color:#333;margin:12px 0">
+        <p style="color:#fff;font-weight:bold;margin-bottom:6px">新手学习顺序</p>
+        <p style="color:#888;font-size:12px">① SQL injection → ② Authentication（认证绕过） → ③ Access control（越权） → ④ Information disclosure（信息泄露） → ⑤ XSS</p>
+
+        <p style="color:#fff;font-weight:bold;margin:10px 0 6px">SRC平台（注册后真实打）</p>
+        <p style="color:#888;font-size:12px">补天：butian.net（国内最大，公益SRC免费测）<br>漏洞盒子：vulbox.com</p>
+      </div>
     </div>
     <div class="progressBar"><div class="progressFill" id="bar"></div></div>
     <div class="progressText" id="progress">就绪</div>
@@ -107,6 +138,7 @@ function show(id){document.querySelectorAll('.page').forEach(function(e){e.class
 function showLogin(){show('loginPage')}
 function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
 function logout(){show('disclaimerPage')}
+function toggleGuide(){var g=document.getElementById('guideBox');g.style.display=g.style.display==='none'?'block':'none'}
 function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
 
 // ===== 浅层：基础常见路径，低危信息泄露 =====
