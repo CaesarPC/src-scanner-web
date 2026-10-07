@@ -14,7 +14,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;
 h1{font-size:20px;margin-bottom:20px;text-align:center;color:#fff}
 p{font-size:13px;line-height:1.7;color:#999;margin-bottom:12px}
 input{width:100%;padding:12px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:16px;margin-bottom:16px}
-button{padding:12px 24px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;white-space:nowrap}
+button{padding:12px 20px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;white-space:nowrap}
 button:hover{background:#3a7aef}
 button:disabled{background:#555;cursor:not-allowed}
 .btnFull{width:100%;margin-bottom:10px}
@@ -25,10 +25,16 @@ button:disabled{background:#555;cursor:not-allowed}
 #scanPage{display:none;min-height:100vh;padding:20px;align-items:flex-start;justify-content:center}
 #scanPage.show{display:flex}
 .wrap{max-width:900px;width:100%}
-.topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .topBar h1{margin:0;font-size:22px;color:#fff}
-.inputRow{display:flex;gap:10px;margin-bottom:16px}
+.inputRow{display:flex;gap:10px;margin-bottom:12px}
 .inputRow input{flex:1;margin-bottom:0}
+.scanBtns{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.scanBtns button{font-size:13px;padding:10px 16px}
+.layerTag{font-size:12px;font-weight:bold;margin:16px 0 8px;padding:4px 10px;border-radius:4px;display:inline-block}
+.l1{background:#1a3a2a;color:#2ed573}
+.l2{background:#3a2a1a;color:#ffa502}
+.l3{background:#3a1a1a;color:#ff4757}
 .progressBar{height:4px;background:#222;border-radius:2px;margin-bottom:8px;overflow:hidden}
 .progressFill{height:100%;background:#4f8cff;width:0%;transition:width .3s}
 .progressText{font-size:11px;color:#444;margin-bottom:16px;word-break:break-all;min-height:16px}
@@ -50,6 +56,11 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
 </style>
 </head>
 <body>
+
+<script>
+// 防iframe嵌套
+if(top!==self){document.body.innerHTML='<div style="padding:20px;color:#666">禁止嵌入</div>';}
+</script>
 
 <div class="page show" id="disclaimerPage">
   <div class="box">
@@ -75,122 +86,227 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
 <div id="scanPage">
   <div class="wrap">
     <div class="topBar">
-      <h1>SRC 自动扫描</h1>
+      <h1>SRC Scanner</h1>
       <button class="logoutBtn" onclick="logout()">退出</button>
     </div>
     <div class="inputRow">
       <input type="text" id="target" placeholder="目标网址 https://example.com">
-      <button onclick="doScan()" id="btn">开始扫描</button>
+      <button onclick="runAll()" id="btnAll">全部扫描</button>
+    </div>
+    <div class="scanBtns">
+      <button onclick="runLayer(1)" id="btn1">浅层扫描</button>
+      <button onclick="runLayer(2)" id="btn2">中层扫描</button>
+      <button onclick="runLayer(3)" id="btn3">深层扫描</button>
     </div>
     <div class="progressBar"><div class="progressFill" id="bar"></div></div>
     <div class="progressText" id="progress">就绪</div>
-    <div class="count" id="count"></div>
-    <div id="results"></div>
+    <div id="layerResults"></div>
   </div>
 </div>
 
 <script>
-var SCANNER_PASSWORD="I(N4z14+hUvz%yT_e&1g&:o9lh(qd]#TJ{Qew;#fcA4K]P;[zEM6,_(?q>Ge4TA;";
-// CORS代理列表，按顺序尝试
+var PWD="I(N4z14+hUvz%yT_e&1g&:o9lh(qd]#TJ{Qew;#fcA4K]P;[zEM6,_(?q>Ge4TA;";
 var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url="];
 
 function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.remove('show');document.getElementById(id).classList.add('show')}
 function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
 function logout(){show('disclaimerPage')}
-function doLogin(){var p=document.getElementById('pwd').value;if(p===SCANNER_PASSWORD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
+function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
 
-var PATHS=[
+// ===== 浅层扫描（基础敏感路径）=====
+var L1=[
 "/.git/HEAD","/.git/config","/.git/index","/.git/logs/HEAD","/.git/refs/heads/main","/.git/refs/heads/master",
 "/.svn/entries","/.hg/store","/CVS/Root",
 "/.env","/.env.local","/.env.production","/.env.development",
 "/config.php","/config.yml","/config.json","/config.ini","/config.yaml",
-"/application.properties","/application.yml","/web.config","/settings.py","/database.yml",
+"/application.properties","/application.yml","/web.config",
 "/wp-config.php.bak","/wp-config.php~","/wp-config.php.swp",
 "/composer.json","/package.json","/.npmrc",
 "/docker-compose.yml","/Dockerfile",
-"/backup.sql","/backup.zip","/backup.tar.gz","/backup.rar","/backup.7z",
-"/www.zip","/wwwroot.zip","/web.zip","/site.zip",
+"/backup.sql","/backup.zip","/backup.tar.gz","/www.zip","/wwwroot.zip","/web.zip","/site.zip",
 "/database.sql","/db.sql","/dump.sql","/1.sql",
 "/admin.zip","/config.bak","/config.php.bak",
-"/private.key","/id_rsa","/credentials.json","/service-account.json","/secrets.json",
-"/.htpasswd","/.htaccess",
-"/admin","/admin/","/admin/login","/admin/index.php","/administrator","/manage",
+"/private.key","/id_rsa","/credentials.json","/.htpasswd","/.htaccess",
+"/admin","/admin/","/admin/login","/administrator","/manage",
 "/manager/html","/phpmyadmin","/pma","/mysql","/wp-admin","/wp-login.php",
 "/user/login","/signin","/console",
 "/nacos","/druid/index.html","/jenkins","/graphql","/graphiql",
-"/actuator","/actuator/env","/actuator/heapdump","/actuator/beans","/actuator/mappings",
-"/server-status","/server-info","/health","/healthz","/metrics","/info","/env","/trace","/dump",
+"/actuator","/actuator/env","/actuator/heapdump",
+"/server-status","/server-info","/health","/healthz",
 "/phpinfo.php","/info.php","/test.php",
-"/swagger-ui.html","/api-docs","/v2/api-docs","/v3/api-docs","/redoc",
-"/access.log","/error.log","/app.log",
-"/.DS_Store","/robots.txt","/sitemap.xml","/crossdomain.xml",
+"/swagger-ui.html","/api-docs","/v2/api-docs",
+"/.DS_Store","/robots.txt","/sitemap.xml",
 "/WEB-INF/web.xml","/.well-known/security.txt"
 ];
 
-async function checkPath(targetUrl){
+// ===== 中层扫描（更多路径+框架+后台+备份变体）=====
+var L2=[
+// Git深度
+"/.git/COMMIT_EDITMSG","/.git/description","/.git/refs/heads/","/.git/refs/tags/","/.git/ORIG_HEAD",
+// 更多配置
+"/settings.py","/local_settings.py","/database.yml","/settings.json","/config.json.bak",
+"/appsettings.json","/appsettings.Production.json","/package-lock.json","/yarn.lock",
+"/.babelrc","/.eslintrc","/.gitlab-ci.yml","/Jenkinsfile","/.travis.yml",
+// 更多备份
+"/backup.rar","/backup.7z","/backup_old.zip","/backup_new.zip","/backup2023.sql","/backup2024.sql",
+"/db_backup.sql","/database_backup.sql","/data.sql","/old.sql","/copy.sql",
+"/www.tar.gz","/html.zip","/httpdocs.zip","/public.zip",
+"/config.php~","/config.php.swp","/config.old","/config.bak2",
+// 更多后台
+"/adminer.php","/adminer/","/adminer-4.3.0.php",
+"/wp-admin/admin-ajax.php","/wp-content/debug.log",
+"/user/register","/user/forgot","/api/user","/api/admin",
+"/backend","/backstage","/sysadmin","/system/login",
+"/admin123","/loginadmin","/admincp","/adminpanel",
+"/tomcat/manager/html","/weblogic/","/web-console/",
+// 更多框架
+"/thinkphp","/laravel","/laravel/logs","/storage/logs/laravel.log",
+"/vendor/","/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php",
+"/_ignition/health-check","/_ignition/execute-solution",
+// 更多调试端点
+"/actuator/beans","/actuator/mappings","/actuator/configprops","/actuator/loggers","/actuator/threaddump",
+"/jolokia/list","/jolokia/version",
+"/debug/vars","/debug/pprof/","/metrics","/prometheus",
+"/.env.testing","/env.js","/config.js",
+// CMS
+"/wp-content/uploads/","/wp-includes/","/xmlrpc.php",
+"/administrator/manifests/files/joomla.xml",
+"/sites/default/settings.php",
+"/CHANGELOG.md","/README.md","/LICENSE",
+// 更多日志
+"/logs/error.log","/logs/access.log","/error_log","/debug.log","/app.log",
+// API
+"/v1/api","/v2/api","/api/v1/user","/api/v1/config",
+"/graphql/playground","/altair","/graphql.json",
+// 其他
+"/crossdomain.xml","/clientaccesspolicy.xml",
+"/.well-known/openid-configuration","/oauth/authorize",
+"/favicon.ico","/crossdomain.txt",
+"/swagger.json","/openapi.json","/api/swagger.json",
+"/.gitignore","/.dockerignore","/Makefile","/requirements.txt",
+"/composer.lock","/yarn-error.log"
+];
+
+// ===== 深层扫描（实际问题检测）=====
+// 这些不是路径探测，而是实际安全检查
+var L3=[
+{type:"method",name:"允许PUT方法(可上传文件)",severity:"high"},
+{type:"method",name:"允许DELETE方法",severity:"high"},
+{type:"method",name:"允许TRACE方法(XST)",severity:"medium"},
+{type:"header",name:"缺X-Frame-Options(可被点击劫持)",header:"x-frame-options",severity:"medium"},
+{type:"header",name:"缺HSTS(HTTPS强制)",header:"strict-transport-security",severity:"medium"},
+{type:"header",name:"缺CSP(内容安全策略)",header:"content-security-policy",severity:"low"},
+{type:"header",name:"缺X-Content-Type-Options",header:"x-content-type-options",severity:"low"},
+{type:"header",name:"Server头泄露版本",header:"server",check:"version",severity:"low"},
+{type:"header",name:"X-Powered-By泄露技术栈",header:"x-powered-by",check:"exists",severity:"info"},
+{type:"path",name:"目录列表可能开启",path:"/",check:"dirlisting",severity:"medium"},
+{type:"path",name:"/tmp目录可访问",path:"/tmp/",severity:"low"},
+{type:"path",name:"/upload目录可访问",path:"/upload/",severity:"low"},
+{type:"path",name:"/uploads目录可访问",path:"/uploads/",severity:"low"},
+{type:"path",name:"/files目录可访问",path:"/files/",severity:"low"},
+{type:"cors",name:"CORS配置为*(任意域名可跨域)",severity:"high"},
+{type:"cookie",name:"Cookie缺HttpOnly",severity:"medium"},
+{type:"cookie",name:"Cookie缺Secure标志",severity:"low"},
+];
+
+var findings={1:[],2:[],3:[]};
+
+async function checkPath(url){
   for(var i=0;i<PROXIES.length;i++){
     try{
-      var ctrl=new AbortController();
-      var timer=setTimeout(function(){ctrl.abort()},6000);
-      var r=await fetch(PROXIES[i]+encodeURIComponent(targetUrl),{signal:ctrl.signal,redirect:'follow'});
-      clearTimeout(timer);
-      return r.status;
+      var c=new AbortController();var t=setTimeout(function(){c.abort()},6000);
+      var r=await fetch(PROXIES[i]+encodeURIComponent(url),{signal:c.signal,redirect:'follow'});
+      clearTimeout(t);
+      return {status:r.status,headers:r.headers,text:await r.text().catch(function(){return ''})};
     }catch(e){}
   }
-  return 0;
+  return null;
 }
 
-var findings=[];
-async function doScan(){
+async function runLayer(num){
   var target=document.getElementById('target').value.trim();
   if(!target){alert('请输入网址');return}
   if(target.indexOf('http')!==0){alert('请带http://');return}
-  findings=[];
-  document.getElementById('results').innerHTML='';
-  document.getElementById('count').textContent='';
-  document.getElementById('btn').disabled=true;
   var base=target.replace(/\/$/,"");
-  var total=PATHS.length;
-  var done=0;
+  document.getElementById('btnAll').disabled=true;
+  findings[num]=[];
 
-  for(var i=0;i<total;i++){
-    var p=PATHS[i];
-    document.getElementById('progress').textContent='扫描 '+p+' ('+(i+1)+'/'+total+')';
-    var status=await checkPath(base+p);
-    if(status>0&&status!==404){
-      var severity='low';
-      if(status===200){
-        if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp)$/.test(p)||p.includes('.git/')||p.includes('.env')||p.includes('heapdump')||p.includes('credentials')||p.includes('id_rsa')||p.includes('private.key')) severity='high';
-        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager/.test(p)) severity='medium';
-      } else if(status===401||status===403) severity='info';
-      findings.push({path:p,url:base+p,status:status,severity:severity});
-      renderResults();
+  if(num<=2){
+    var paths=num===1?L1:L2;
+    var total=paths.length;
+    for(var i=0;i<total;i++){
+      var p=paths[i];
+      document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描 '+p+' ('+(i+1)+'/'+total+')';
+      var res=await checkPath(base+p);
+      if(res&&res.status!==404){
+        var sev='low';
+        if(res.status===200){
+          if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
+          else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
+        } else if(res.status===401||res.status===403) sev='info';
+        findings[num].push({path:p,url:base+p,status:res.status,severity:sev});
+      }
+      document.getElementById('bar').style.width=((i+1)/total*100)+'%';
+      renderLayers();
     }
-    done=i+1;
-    document.getElementById('bar').style.width=(done/total*100)+'%';
+  } else {
+    // 深层扫描：实际安全检查
+    var total3=L3.length;
+    for(var j=0;j<L3.length;j++){
+      var c=L3[j];
+      document.getElementById('progress').textContent='深层检测: '+c.name+' ('+(j+1)+'/'+total3+')';
+      var res=await checkPath(base+'/');
+      if(res){
+        var found=false;
+        if(c.type==='header'){
+          var hv=res.headers.get(c.header);
+          if(c.check==='version'){if(hv&&/\d/.test(hv))found=true}
+          else if(c.check==='exists'){if(hv)found=true}
+          else{if(!hv)found=true}
+        } else if(c.type==='cors'){
+          var aco=res.headers.get('access-control-allow-origin');
+          if(aco==='*'||aco==='*')found=true;
+        } else if(c.type==='path'){
+          if(res.status===200&&res.text.indexOf('<a href=')>=0)found=true;
+        } else if(c.type==='method'){
+          // 简化：记录为待手动验证
+          findings[3].push({path:c.name,url:base+'/',status:'需手动验证',severity:c.severity});
+        }
+        if(found)findings[3].push({path:c.name,url:base+'/',status:'已发现',severity:c.severity});
+      }
+      document.getElementById('bar').style.width=((j+1)/total3*100)+'%';
+      renderLayers();
+    }
   }
 
-  document.getElementById('progress').textContent='扫描完成，共检测 '+total+' 个路径';
-  document.getElementById('btn').disabled=false;
-  renderResults();
+  document.getElementById('progress').textContent=(num===1?'浅层':num===2?'中层':'深层')+'扫描完成';
+  document.getElementById('btnAll').disabled=false;
+  renderLayers();
 }
 
-function renderResults(){
-  if(findings.length===0){
-    document.getElementById('count').textContent='扫描完成';
-    document.getElementById('results').innerHTML='<div style="color:#555;padding:20px;text-align:center">未发现非404路径，目标看起来干净</div>';
-    return;
-  }
+async function runAll(){
+  await runLayer(1);
+  await runLayer(2);
+  await runLayer(3);
+}
+
+function renderLayers(){
   var label={high:'高危',medium:'中危',low:'低危',info:'需认证'};
   var order={high:0,medium:1,low:2,info:3};
-  findings.sort(function(a,b){return(order[a.severity]||9)-(order[b.severity]||9)});
-  document.getElementById('count').textContent='发现 '+findings.length+' 个非404结果';
+  var names={1:'浅层扫描',2:'中层扫描',3:'深层扫描'};
+  var tags={1:'l1',2:'l2',3:'l3'};
   var html='';
-  for(var i=0;i<findings.length;i++){
-    var r=findings[i];
-    html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">HTTP '+r.status+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>';
+  for(var l=1;l<=3;l++){
+    if(findings[l].length===0)continue;
+    var sorted=findings[l].slice().sort(function(a,b){return(order[a.severity]||9)-(order[b.severity]||9)});
+    html+='<div class="layerTag '+tags[l]+'">'+names[l]+' · '+sorted.length+' 项</div>';
+    for(var i=0;i<sorted.length;i++){
+      var r=sorted[i];
+      html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">'+r.status+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>';
+    }
   }
-  document.getElementById('results').innerHTML=html;
+  if(!html)html='<div style="color:#555;padding:20px;text-align:center">等待扫描...</div>';
+  document.getElementById('layerResults').innerHTML=html;
 }
 </script>
 </body>
