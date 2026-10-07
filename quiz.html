@@ -8,24 +8,28 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
 .wrap{max-width:800px;margin:0 auto;padding:20px}
-h1{font-size:22px;color:#fff;margin:20px 0}
-h2{font-size:16px;color:#4f8cff;margin:20px 0 10px}
-.card{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.topbar h1{font-size:22px;color:#fff;margin:0}
+.topbar a{color:#888;font-size:13px;text-decoration:none}
+button{padding:12px 24px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+button:hover{background:#3a7aef}
+.btn-gray{background:#333}
+.site-header{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:16px;border-left:4px solid #4f8cff}
+.site-header h3{color:#fff;font-size:16px;margin-bottom:4px}
+.site-header .host{font-family:monospace;color:#4f8cff;font-size:14px;margin:8px 0}
+.inputRow{display:flex;gap:10px;margin:16px 0}
+.inputRow input{flex:1;padding:12px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:14px}
+.card{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
 .card input[type=checkbox]{width:20px;height:20px;accent-color:#4f8cff}
 .card .url{font-family:monospace;font-size:13px;word-break:break-all;flex:1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+.grid .card{margin:0}
 .vuln-tag{font-size:11px;padding:2px 8px;border-radius:4px;white-space:nowrap}
 .tag-high{background:#ff4757;color:#fff}
 .tag-med{background:#ffa502;color:#000}
 .tag-low{background:#2ed573;color:#000}
 .tag-safe{background:#333;color:#888}
-button{padding:12px 24px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin:5px}
-button:hover{background:#3a7aef}
-button:disabled{background:#555}
-.btn-gray{background:#333}
-.site-header{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:16px;border-left:4px solid #4f8cff}
-.site-header h3{color:#fff;font-size:16px;margin-bottom:4px}
-.site-header p{color:#888;font-size:12px}
-.result-box{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:10px}
+.result-box{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:8px}
 .correct{border-left:4px solid #2ed573}
 .wrong{border-left:4px solid #ff4757}
 .missed{border-left:4px solid #ffa502}
@@ -39,17 +43,15 @@ button:disabled{background:#555}
 .b-right{background:#2ed573;color:#000}
 .b-wrong{background:#ff4757;color:#fff}
 .b-miss{background:#ffa502;color:#000}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.round-num{font-size:14px;color:#888}
 </style>
 </head>
 <body>
 <div class="wrap">
 <div class="topbar">
-<h1 style="margin:0">SRC 靶场练习</h1>
-<button class="btn-gray" onclick="newRound()">换一轮</button>
+<h1>SRC 靶场练习</h1>
+<a href="https://caesarpc.github.io/caesarbase/main.html">← 返回CaesarBase</a>
 </div>
-<p style="color:#888;font-size:13px;margin-bottom:16px">每个目标网站随机生成若干页面，勾选你认为有漏洞的页面，然后提交答案。</p>
+<p style="color:#888;font-size:13px;margin-bottom:16px">每个目标网站随机生成若干页面，勾选你认为有漏洞的，提交后看答案和原理。</p>
 
 <div id="quizArea"></div>
 
@@ -83,7 +85,7 @@ var VULNS=[
 {url:"/debug.log",sev:"med",desc:"调试日志，可能含敏感信息",why:"调试模式开着没关"},
 {url:"/.htpasswd",sev:"med",desc:"密码哈希文件泄露",why:"权限配置错误"},
 {url:"/console",sev:"med",desc:"调试控制台入口",why:"生产环境没关"},
-{url:"/robots.txt",sev:"safe",desc:"只是爬虫规则，正常文件",why":"没事，robots.txt本来就是公开的"},
+{url:"/robots.txt",sev:"safe",desc:"只是爬虫规则，正常文件",why:"没事，robots.txt本来就是公开的"},
 {url:"/favicon.ico",sev:"safe",desc:"网站图标，正常文件",why:"浏览器自动请求的图标"},
 {url:"/login",sev:"safe",desc:"登录页面，正常功能",why:"登录页是正常的，不是漏洞"},
 {url:"/sitemap.xml",sev:"safe",desc:"站点地图，正常文件",why:"SEO需要的公开文件"},
@@ -103,10 +105,10 @@ var VULNS=[
 
 var round=0;
 var targets=[];
+var host='';
 
 function pickRandom(arr,n){
-  var shuffled=arr.slice().sort(function(){return Math.random()-0.5});
-  return shuffled.slice(0,n);
+  return arr.slice().sort(function(){return Math.random()-0.5}).slice(0,n);
 }
 
 function newRound(){
@@ -114,22 +116,23 @@ function newRound(){
   document.getElementById('resultArea').innerHTML='';
   document.getElementById('btnSubmit').style.display='';
   document.getElementById('btnNext').style.display='none';
-  // 每轮选8个页面，其中5个有问题3个正常
   var vulns=pickRandom(VULNS.filter(function(v){return v.sev!=='safe'}),5);
   var safes=pickRandom(VULNS.filter(function(v){return v.sev==='safe'}),3);
   targets=vulns.concat(safes).sort(function(){return Math.random()-0.5});
-  var host='https://target-'+Math.floor(Math.random()*999)+'.com';
-  var html='<div class="site-header"><h3>🎯 目标网站 #'+round+'</h3><p>'+host+' — 以下是该网站的部分页面路径，勾选你认为有安全问题的：</p></div>';
+  host='https://target-'+Math.floor(Math.random()*9999)+'.com';
+  var html='<div class="site-header"><h3>🎯 目标网站 #'+round+'</h3><div class="host">'+host+'</div><p style="color:#888;font-size:12px">勾选你认为有安全问题的页面：</p></div>';
+  html+='<div class="grid">';
   targets.forEach(function(t,i){
-    html+='<div class="card"><input type="checkbox" id="cb'+i+'" data-idx="'+i+'"><div class="url">'+t.url+'</div></div>';
+    html+='<div class="card"><input type="checkbox" id="cb'+i+'"><div class="url">'+t.url+'</div></div>';
   });
+  html+='</div>';
   document.getElementById('quizArea').innerHTML=html;
 }
 
 function submitAnswers(){
   var score=0;
   var total=targets.length;
-  var html='<h2>答案解析</h2>';
+  var html='<h2 style="color:#4f8cff;margin:20px 0 10px">答案解析</h2>';
   targets.forEach(function(t,i){
     var cb=document.getElementById('cb'+i);
     var checked=cb.checked;
@@ -137,9 +140,9 @@ function submitAnswers(){
     var right=(checked&&isVuln)||(!checked&&!isVuln);
     if(right)score++;
     var cls=isVuln?(checked?'correct':'missed'):(checked?'wrong':'correct');
-    var badge=isVuln?(checked?'<span class="badge b-right">✅ 你选对了</span>':'<span class="badge b-miss">⚠️ 你漏了</span>'):(checked?'<span class="badge b-wrong">❌ 你误报了</span>':'<span class="badge b-right">✅ 正确</span>');
+    var badge=isVuln?(checked?'<span class="badge b-right">✅ 选对了</span>':'<span class="badge b-miss">⚠️ 漏了</span>'):(checked?'<span class="badge b-wrong">❌ 误报</span>':'<span class="badge b-right">✅ 正确</span>');
     var sevTag=t.sev==='safe'?'<span class="vuln-tag tag-safe">正常</span>':'<span class="vuln-tag tag-'+(t.sev==='high'?'high':t.sev==='med'?'med':'low')+'">'+(t.sev==='high'?'高危':t.sev==='med'?'中危':'低危')+'</span>';
-    html+='<div class="result-box '+cls+'"><div class="url" style="font-family:monospace;font-size:13px">'+t.url+' '+sevTag+badge+'</div>';
+    html+='<div class="result-box '+cls+'"><div style="font-family:monospace;font-size:13px">'+t.url+' '+sevTag+badge+'</div>';
     html+='<div class="explain"><b>'+t.desc+'</b><br>原理：'+t.why+'</div></div>';
   });
   var pct=Math.round(score/total*100);
