@@ -342,12 +342,20 @@ async function runLayer(num){
         var body=res.text||'';
         var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
         if(/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p))return null;
-        if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.85)return null;
-        if(body.length<20)return null;
-        if(/404 not found|page not found|页面不存在|找不到/i.test(body.slice(0,1000)))return null;
-        if(/codetabs|corsproxy|502 bad gateway|503/i.test(body.slice(0,500)))return null;
+        // 敏感文件类型不过滤，直接报
+        if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.9)return null;
+        if(body.length<10)return null;
+        if(/404 not found|page not found|页面不存在|找不到此页面/i.test(body.slice(0,500)))return null;
+        if(/codetabs|corsproxy|502 bad gateway|503 service/i.test(body.slice(0,300)))return null;
+        // 内容关键词检测——如果body里有敏感内容，直接报高危
+        var bodyLower=body.toLowerCase();
+        var hasSecrets=false;
+        if(bodyLower.indexOf('db_password')>=0||bodyLower.indexOf('db_host')>=0||bodyLower.indexOf('api_key')>=0||bodyLower.indexOf('secret_key')>=0)hasSecrets=true;
+        if(bodyLower.indexOf('private key')>=0||bodyLower.indexOf('-----begin rsa')>=0||bodyLower.indexOf('-----begin private')>=0)hasSecrets=true;
+        if(bodyLower.indexOf('[core]')>=0||bodyLower.indexOf('[remote ')>=0||bodyLower.indexOf('[branch ')>=0)hasSecrets=true;
+        if(bodyLower.indexOf('root:')>=0&&bodyLower.indexOf('x:0:0:')>=0)hasSecrets=true;
         var sev='low';
-        if(isSensitive)sev='high';
+        if(isSensitive||hasSecrets)sev='high';
         else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p))sev='medium';
         return {path:p,url:base+p,status:res.status,severity:sev};
       }));
@@ -366,9 +374,15 @@ async function runLayer(num){
       var res=await checkPath(base+item.path);
       if(res&&res.status===200){
         var body=res.text||'';
-        if(body.length<20)continue;
-        if(homeText&&body&&similarity(homeText,body)>0.85)continue;
-        findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note});
+        if(body.length<10)continue;
+        if(homeText&&body&&similarity(homeText,body)>0.9)continue;
+        // 深层也检测内容关键词
+        var bl=body.toLowerCase();
+        var extra='';
+        if(bl.indexOf('db_password')>=0)extra=' · 含数据库密码';
+        else if(bl.indexOf('[core]')>=0)extra=' · 确认为Git配置';
+        else if(bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0)extra=' · 确认为私钥';
+        findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note+extra});
         renderLayers();
       }
       document.getElementById('bar').style.width=((k+1)/total3*100)+'%';
