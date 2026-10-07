@@ -3,20 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <title>SRC Scanner</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
 #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 #mainScreen{display:none;padding:20px;max-width:900px;margin:0 auto}
-.box{background:#1a1d27;padding:40px;border-radius:12px;width:100%;max-width:360px}
-h1{font-size:20px;margin-bottom:24px;text-align:center;color:#fff}
+.box{background:#1a1d27;padding:30px;border-radius:12px;width:100%;max-width:420px}
+h1{font-size:20px;margin-bottom:20px;text-align:center;color:#fff}
 input{width:100%;padding:12px;margin-bottom:16px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:16px}
 button{padding:12px 24px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;white-space:nowrap}
 button:hover{background:#3a7aef}
 button:disabled{background:#555;cursor:not-allowed}
 .btnFull{width:100%}
 .err{color:#ff6b6b;text-align:center;margin-top:12px;font-size:14px}
+.disclaimer{margin-top:20px;padding:12px;background:#11141a;border-radius:8px;font-size:11px;color:#666;line-height:1.6}
+.disclaimer b{color:#999}
 .topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .topBar h1{margin:0;text-align:left;font-size:22px}
 .inputRow{display:flex;gap:10px;margin-bottom:20px}
@@ -47,6 +50,13 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap}
     <input type="password" id="pwd" placeholder="输入密码" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btnFull" onclick="doLogin()">进 入</button>
     <div class="err" id="err"></div>
+    <div class="disclaimer">
+      <b>免责声明</b><br><br>
+      本工具仅用于经授权的安全测试与漏洞研究，使用者必须确保已获得目标系统所有者的书面授权。<br><br>
+      严禁将本工具用于未经授权的扫描、探测或任何可能违反《网络安全法》及相关法律法规的行为。<br><br>
+      使用者在使用本工具过程中产生的一切后果，包括但不限于数据泄露、服务中断、法律责任、经济损失等，均由使用者自行承担，本工具作者不承担任何责任。<br><br>
+      继续使用即表示您已阅读并同意以上条款。
+    </div>
   </div>
 </div>
 
@@ -67,21 +77,26 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap}
 <script>
 var API = "https://src-scanner.cr-tools.workers.dev";
 var savedPwd = localStorage.getItem('src_pwd') || '';
-if (savedPwd) showMain();
 
 function showMain() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('mainScreen').style.display = 'block';
 }
+function showLogin() {
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+if (savedPwd) showMain();
+
 function doLogout() {
   savedPwd = '';
   localStorage.removeItem('src_pwd');
-  document.getElementById('mainScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
+  showLogin();
 }
 
 async function doLogin() {
   var pwd = document.getElementById('pwd').value;
+  document.getElementById('err').textContent = '';
   try {
     var r = await fetch(API + '/api/login', {
       method: 'POST',
