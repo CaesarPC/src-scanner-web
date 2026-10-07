@@ -250,7 +250,7 @@ async function runLayer(num){
   if(num<=2){
     var paths=num===1?L1:L2;
     var total=paths.length;
-    var BATCH=20;
+    var BATCH=50;
     for(var i=0;i<total;i+=BATCH){
       var batch=paths.slice(i,i+BATCH);
       document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描中... ('+Math.min(i+BATCH,total)+'/'+total+')';
