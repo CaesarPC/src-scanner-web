@@ -22,9 +22,14 @@ button:disabled{background:#555;cursor:not-allowed}
 .err{color:#ff6b6b;text-align:center;margin-top:12px;font-size:14px}
 .disc{background:#11141a;padding:12px;border-radius:8px;font-size:11px;color:#666;line-height:1.7;margin-top:16px;text-align:left}
 .disc b{color:#999}
-#scanPage{display:none;min-height:100vh;padding:20px;align-items:flex-start;justify-content:center}
+#scanPage{display:none;min-height:100vh;padding:0;align-items:flex-start;justify-content:center}
 #scanPage.show{display:flex}
-.wrap{max-width:900px;width:100%}
+.mainWrap{max-width:900px;width:100%;display:flex;gap:0;min-height:100vh}
+.sidebar{width:140px;background:#1a1d27;padding:20px 0;flex-shrink:0;border-right:1px solid #2a2a3a}
+.sidebar a{display:block;padding:12px 16px;color:#888;text-decoration:none;font-size:13px;border-left:3px solid transparent;cursor:pointer}
+.sidebar a:hover{color:#fff;background:#222530}
+.sidebar a.active{color:#4f8cff;border-left-color:#4f8cff}
+.content{flex:1;padding:20px;max-width:760px}
 .topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .topBar h1{margin:0;font-size:22px;color:#fff}
 .inputRow{display:flex;gap:10px;margin-bottom:12px}
@@ -72,18 +77,26 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
 
 <div class="page" id="loginPage">
   <div class="box">
-    <h1>请输入密码</h1>
-    <input type="password" id="pwd" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <h1>请输入管理员密钥</h1>
+    <input type="password" id="pwd" placeholder="密钥" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btnFull" onclick="doLogin()">进 入</button>
     <div class="err" id="err"></div>
+    <div class="disc">本工具仅限授权安全测试使用。<br>仅提供免费漏洞扫描辅助，不承担任何使用后果。<br>密钥仅限站长本人使用。</div>
   </div>
 </div>
 
 <div id="scanPage">
-  <div class="wrap">
+  <div class="mainWrap">
+    <div class="sidebar">
+      <div style="padding:0 16px 16px;font-size:16px;font-weight:bold;color:#fff">SRC Scanner</div>
+      <a class="active" onclick="showTab('scan')">🔍 漏洞扫描</a>
+      <a href="quiz.html">📝 靶场练习</a>
+      <a onclick="toggleGuide()">📚 学习指南</a>
+      <a onclick="logout()">🚪 退出</a>
+    </div>
+    <div class="content">
     <div class="topBar">
-      <h1>SRC Scanner</h1>
-      <button class="logoutBtn" onclick="logout()">退出</button>
+      <h1>SRC漏洞扫描</h1>
     </div>
     <div class="inputRow">
       <input type="text" id="target" placeholder="目标网址 https://example.com">
@@ -128,6 +141,7 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
     <div class="progressBar"><div class="progressFill" id="bar"></div></div>
     <div class="progressText" id="progress">就绪</div>
     <div id="layerResults"></div>
+    </div>
   </div>
 </div>
 
@@ -139,6 +153,7 @@ function showLogin(){show('loginPage')}
 function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
 function logout(){show('disclaimerPage')}
 function toggleGuide(){var g=document.getElementById('guideBox');g.style.display=g.style.display==='none'?'block':'none'}
+function showTab(t){if(t==='scan'){document.querySelectorAll('.sidebar a').forEach(function(a){a.classList.remove('active')});event.target.classList.add('active')}}
 function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
 
 // ===== 浅层：基础常见路径，低危信息泄露 =====
