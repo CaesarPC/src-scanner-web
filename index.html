@@ -258,8 +258,10 @@ async function runLayer(num){
         var res=await checkPath(base+p);
         if(!res||res.status!==200)return null;
         var body=res.text||'';
-        if(homeText&&body&&similarity(homeText,body)>0.7)return null;
-        if(body.length<50)return null;
+        // 敏感文件类型不做软404过滤，直接报
+        var isSensitiveFile=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log|json|xml)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
+        if(!isSensitiveFile&&homeText&&body&&similarity(homeText,body)>0.95)return null;
+        if(body.length<20)return null;
         if(/404 not found|page not found|页面不存在|找不到页面|404错误/i.test(body.slice(0,1000)))return null;
         if(/codetabs|corsproxy|cors proxy|502 bad gateway|503/i.test(body.slice(0,500)))return null;
         var sev='low';
