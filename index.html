@@ -132,7 +132,7 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
 </div>
 
 <script>
-var PWD="I(N4z14+hUvz%yT_e&1g&:o9lh(qd]#TJ{Qew;#fcA4K]P;[zEM6,_(?q>Ge4TA;";
+var PWD="314314314";
 var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url="];
 function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.remove('show');document.getElementById(id).classList.add('show')}
 function showLogin(){show('loginPage')}
@@ -283,6 +283,17 @@ var L3=[
 ];
 
 var findings={1:[],2:[],3:[]};
+var fakeTimer=null;
+function startFakeProgress(targetPct){
+  clearInterval(fakeTimer);
+  var cur=parseFloat(document.getElementById('bar').style.width)||0;
+  fakeTimer=setInterval(function(){
+    cur+=0.15;
+    if(cur>=targetPct)cur=targetPct;
+    document.getElementById('bar').style.width=cur+'%';
+  },100);
+}
+function stopFakeProgress(){clearInterval(fakeTimer)}
 
 async function checkPath(url){
   for(var i=0;i<PROXIES.length;i++){
@@ -322,7 +333,9 @@ async function runLayer(num){
     var BATCH=50;
     for(var i=0;i<total;i+=BATCH){
       var batch=paths.slice(i,i+BATCH);
+      var targetPct=Math.min(i+BATCH,total)/total*100;
       document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描中... ('+Math.min(i+BATCH,total)+'/'+total+')';
+      startFakeProgress(targetPct);
       var results=await Promise.all(batch.map(async function(p){
         var res=await checkPath(base+p);
         if(!res||res.status!==200)return null;
@@ -339,7 +352,8 @@ async function runLayer(num){
         return {path:p,url:base+p,status:res.status,severity:sev};
       }));
       results.filter(Boolean).forEach(function(r){findings[num].push(r)});
-      document.getElementById('bar').style.width=(Math.min(i+BATCH,total)/total*100)+'%';
+      stopFakeProgress();
+      document.getElementById('bar').style.width=targetPct+'%';
       renderLayers();
     }
   } else {
@@ -348,6 +362,7 @@ async function runLayer(num){
     for(var k=0;k<total3;k++){
       var item=L3[k];
       document.getElementById('progress').textContent='深层检测: '+item.path+' ('+(k+1)+'/'+total3+')';
+      startFakeProgress((k+1)/total3*100);
       var res=await checkPath(base+item.path);
       if(res&&res.status===200){
         var body=res.text||'';
@@ -357,6 +372,7 @@ async function runLayer(num){
         renderLayers();
       }
       document.getElementById('bar').style.width=((k+1)/total3*100)+'%';
+      stopFakeProgress();
     }
   }
   document.getElementById('progress').textContent=(num===1?'浅层':num===2?'中层':'深层')+'扫描完成';
