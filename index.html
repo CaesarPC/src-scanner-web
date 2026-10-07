@@ -19,17 +19,27 @@ button:hover{background:#3a7aef}
 button:disabled{background:#555;cursor:not-allowed}
 .btnFull{width:100%;margin-bottom:10px}
 .btnGray{background:#333}
+.btnGreen{background:#2d6a4f}
 .err{color:#ff6b6b;text-align:center;margin-top:12px;font-size:14px}
 .disc{background:#11141a;padding:12px;border-radius:8px;font-size:11px;color:#666;line-height:1.7;margin-top:16px;text-align:left}
 .disc b{color:#999}
-#scanPage{display:none;min-height:100vh;padding:0;align-items:flex-start;justify-content:center}
-#scanPage.show{display:flex}
-.mainWrap{max-width:900px;width:100%;display:flex;gap:0;min-height:100vh}
-.sidebar{width:140px;background:#1a1d27;padding:20px 0;flex-shrink:0;border-right:1px solid #2a2a3a}
-.sidebar a{display:block;padding:12px 16px;color:#888;text-decoration:none;font-size:13px;border-left:3px solid transparent;cursor:pointer}
-.sidebar a:hover{color:#fff;background:#222530}
-.sidebar a.active{color:#4f8cff;border-left-color:#4f8cff}
-.content{flex:1;padding:20px;max-width:760px}
+#appPage{display:none;min-height:100vh}
+#appPage.show{display:flex}
+.mainWrap{display:flex;min-height:100vh;width:100%;max-width:1100px;margin:0 auto}
+.sidebar{background:#1a1d27;border-right:1px solid #2a2a3a;display:flex;flex-direction:column;transition:width .2s;flex-shrink:0}
+.sidebar.expanded{width:160px}
+.sidebar.collapsed{width:56px}
+.sidebar .logoRow{padding:16px 0;text-align:center;font-size:16px;font-weight:bold;color:#fff;white-space:nowrap;overflow:hidden}
+.sidebar.collapsed .logoRow span{display:none}
+.sidebar .navItem{display:flex;align-items:center;gap:10px;padding:12px 16px;color:#888;cursor:pointer;border-left:3px solid transparent;white-space:nowrap;font-size:13px}
+.sidebar .navItem:hover{color:#fff;background:#222530}
+.sidebar .navItem.active{color:#4f8cff;border-left-color:#4f8cff}
+.sidebar .navItem .icon{font-size:16px;flex-shrink:0}
+.sidebar.collapsed .navItem .label{display:none}
+.sidebar .collapseBtn{padding:12px;text-align:center;color:#555;cursor:pointer;font-size:14px}
+.content{flex:1;padding:20px;overflow-x:hidden}
+.tab{display:none}
+.tab.active{display:block}
 .topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .topBar h1{margin:0;font-size:22px;color:#fff}
 .inputRow{display:flex;gap:10px;margin-bottom:12px}
@@ -55,9 +65,34 @@ button:disabled{background:#555;cursor:not-allowed}
 .b-low{background:#2ed573;color:#000}
 .b-info{background:#5352ed;color:#fff}
 .meta{font-size:11px;color:#666;margin-top:3px}
-.count{font-size:13px;color:#888;margin-bottom:10px}
-a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
-.logoutBtn{font-size:12px;color:#888;background:none;border:1px solid #444;padding:5px 10px}
+a{color:#4f8cff;text-decoration:none;font-size:13px}
+.guideBox{background:#1a1d27;border-radius:8px;padding:16px;margin-bottom:16px}
+.guideBox h3{color:#fff;font-size:15px;margin-bottom:12px}
+.guideBox div{font-size:13px;line-height:1.8;color:#aaa}
+/* quiz styles */
+.quizCard{background:#1a1d27;border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid #2a2a3a}
+.quizCard h3{color:#fff;font-size:16px;margin-bottom:8px}
+.quizCard .host{font-family:monospace;color:#4f8cff;font-size:14px;margin:8px 0}
+.quizInputRow{display:flex;gap:10px;margin:12px 0}
+.quizInputRow input{flex:1;padding:12px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:14px;margin-bottom:0}
+.vulnTag{font-size:11px;padding:2px 8px;border-radius:4px;white-space:nowrap;display:inline-block}
+.tagHigh{background:#ff4757;color:#fff}
+.tagMed{background:#ffa502;color:#000}
+.tagLow{background:#2ed573;color:#000}
+.tagSafe{background:#333;color:#888}
+.resultBox{background:#1a1d27;border-radius:8px;padding:14px;margin-bottom:8px}
+.resultBox.correct{border-left:4px solid #2ed573}
+.resultBox.wrong{border-left:4px solid #ff4757}
+.resultBox.missed{border-left:4px solid #ffa502}
+.explain{font-size:12px;color:#888;margin-top:6px;line-height:1.6}
+.explain b{color:#ccc}
+.scoreBig{font-size:32px;font-weight:bold;text-align:center;margin:16px 0}
+.scoreGood{color:#2ed573}.scoreOk{color:#ffa502}.scoreBad{color:#ff4757}
+.checkGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.checkItem{background:#1a1d27;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.checkItem input{margin:0;width:18px;height:18px;accent-color:#4f8cff}
+.checkItem .url{font-family:monospace;font-size:12px;word-break:break-all}
+.loadingBox{text-align:center;padding:40px;color:#4f8cff;font-size:14px}
 </style>
 </head>
 <body>
@@ -85,63 +120,68 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
   </div>
 </div>
 
-<div id="scanPage">
+<div id="appPage">
   <div class="mainWrap">
-    <div class="sidebar">
-      <div style="padding:0 16px 16px;font-size:16px;font-weight:bold;color:#fff">SRC Scanner</div>
-      <a class="active" onclick="showTab('scan')">🔍 漏洞扫描</a>
-      <a href="quiz.html">📝 靶场练习</a>
-      <a onclick="toggleGuide()">📚 学习指南</a>
-      <a href="https://caesarpc.github.io/caesarbase/main.html">🏠 返回主站</a>
-      <a onclick="logout()">🚪 退出</a>
+    <div class="sidebar expanded" id="sidebar">
+      <div class="logoRow"><span>SRC Scanner</span></div>
+      <div class="navItem active" data-tab="scan" onclick="switchTab('scan')"><span class="icon">🔍</span><span class="label">漏洞扫描</span></div>
+      <div class="navItem" data-tab="quiz" onclick="switchTab('quiz')"><span class="icon">📝</span><span class="label">靶场练习</span></div>
+      <div class="navItem" onclick="toggleGuide()"><span class="icon">📚</span><span class="label">学习指南</span></div>
+      <div class="navItem" onclick="location.href='https://caesarpc.github.io/caesarbase/main.html'"><span class="icon">🏠</span><span class="label">返回主站</span></div>
+      <div class="navItem" onclick="logout()"><span class="icon">🚪</span><span class="label">退出</span></div>
+      <div class="collapseBtn" onclick="toggleSidebar()" id="collapseBtn">◀</div>
     </div>
     <div class="content">
-    <div class="topBar">
-      <h1>SRC漏洞扫描</h1>
-    </div>
-    <div class="inputRow">
-      <input type="text" id="target" placeholder="目标网址 https://example.com">
-      <button onclick="runAll()" id="btnAll">全部扫描</button>
-    </div>
-    <div class="scanBtns">
-      <button onclick="runLayer(1)" id="btn1">浅层(100)</button>
-      <button onclick="runLayer(2)" id="btn2">中层(150)</button>
-      <button onclick="runLayer(3)" id="btn3">深层(50)</button>
-      <button onclick="toggleGuide()" id="btnGuide" style="background:#2d6a4f">靶机指南</button>
-    </div>
-    <div id="guideBox" style="display:none;background:#1a1d27;border-radius:8px;padding:16px;margin-bottom:16px">
-      <h3 style="color:#fff;font-size:15px;margin-bottom:12px">靶机/练习平台推荐</h3>
-      <div style="font-size:13px;line-height:1.8;color:#aaa">
-        <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">1. PortSwigger Web Security Academy（首选）</p>
-        <p>网址：<a href="https://portswigger.net/web-security" target="_blank" style="color:#4f8cff">portswigger.net/web-security</a></p>
-        <p style="color:#888;font-size:12px">免费、浏览器直接打、从学徒到专家。先做SQL injection → Access control → Information disclosure</p>
-        <p style="color:#888;font-size:12px;margin-bottom:8px">第一个lab：<a href="https://portswigger.net/web-security/sql-injection/lab-retrieve-hidden-data" target="_blank" style="color:#4f8cff">SQL injection in WHERE clause</a></p>
 
-        <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">2. TryHackMe</p>
-        <p>网址：<a href="https://tryhackme.com" target="_blank" style="color:#4f8cff">tryhackme.com</a></p>
-        <p style="color:#888;font-size:12px;margin-bottom:8px">有中文，新手引导好，像做任务一样一步步教</p>
-
-        <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">3. PentesterLab</p>
-        <p>网址：<a href="https://pentesterlab.com" target="_blank" style="color:#4f8cff">pentesterlab.com</a></p>
-        <p style="color:#888;font-size:12px;margin-bottom:8px">免费练习SQLi/XSS/文件包含/反序列化</p>
-
-        <p style="color:#ffa502;font-weight:bold;margin-bottom:4px">4. DVWA（本地装）</p>
-        <p style="color:#888;font-size:12px;margin-bottom:8px">下载Docker：docker pull vulnerables/web-dvwa，12种漏洞类型</p>
-
-        <p style="color:#ffa502;font-weight:bold;margin-bottom:4px">5. OWASP Juice Shop（本地装）</p>
-        <p style="color:#888;font-size:12px;margin-bottom:8px">docker pull bkimminich/juice-shop，Node.js写的现代应用</p>
-
-        <hr style="border-color:#333;margin:12px 0">
-        <p style="color:#fff;font-weight:bold;margin-bottom:6px">新手学习顺序</p>
-        <p style="color:#888;font-size:12px">① SQL injection → ② Authentication（认证绕过） → ③ Access control（越权） → ④ Information disclosure（信息泄露） → ⑤ XSS</p>
-
-        <p style="color:#fff;font-weight:bold;margin:10px 0 6px">SRC平台（注册后真实打）</p>
-        <p style="color:#888;font-size:12px">补天：butian.net（国内最大，公益SRC免费测）<br>漏洞盒子：vulbox.com</p>
+      <!-- 扫描tab -->
+      <div class="tab active" id="tab-scan">
+        <div class="topBar"><h1>SRC漏洞扫描</h1></div>
+        <div class="inputRow">
+          <input type="text" id="target" placeholder="目标网址 https://example.com">
+          <button onclick="runAll()" id="btnAll">全部扫描</button>
+        </div>
+        <div class="scanBtns">
+          <button onclick="runLayer(1)" id="btn1">浅层(100)</button>
+          <button onclick="runLayer(2)" id="btn2">中层(150)</button>
+          <button onclick="runLayer(3)" id="btn3">深层(50)</button>
+        </div>
+        <div id="guideBox" class="guideBox" style="display:none">
+          <h3>靶机/练习平台推荐</h3>
+          <div>
+            <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">1. PortSwigger Web Security Academy（首选）</p>
+            <p>网址：<a href="https://portswigger.net/web-security" target="_blank">portswigger.net/web-security</a></p>
+            <p style="color:#888;font-size:12px">免费、浏览器直接打。先做SQL injection → Access control → Information disclosure</p>
+            <p style="color:#888;font-size:12px;margin-bottom:8px">第一个lab：<a href="https://portswigger.net/web-security/sql-injection/lab-retrieve-hidden-data" target="_blank">SQL injection in WHERE clause</a></p>
+            <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">2. TryHackMe</p>
+            <p>网址：<a href="https://tryhackme.com" target="_blank">tryhackme.com</a></p>
+            <p style="color:#888;font-size:12px;margin-bottom:8px">有中文，新手引导好</p>
+            <p style="color:#2ed573;font-weight:bold;margin-bottom:4px">3. PentesterLab</p>
+            <p>网址：<a href="https://pentesterlab.com" target="_blank">pentesterlab.com</a></p>
+            <p style="color:#888;font-size:12px;margin-bottom:8px">免费练习SQLi/XSS/文件包含</p>
+            <p style="color:#ffa502;font-weight:bold;margin-bottom:4px">4. DVWA / Juice Shop（本地Docker）</p>
+            <p style="color:#888;font-size:12px;margin-bottom:8px">docker pull vulnerables/web-dvwa / bkimminich/juice-shop</p>
+            <hr style="border-color:#333;margin:12px 0">
+            <p style="color:#fff;font-weight:bold;margin-bottom:6px">新手学习顺序</p>
+            <p style="color:#888;font-size:12px">① SQL injection → ② 认证绕过 → ③ 越权 → ④ 信息泄露 → ⑤ XSS</p>
+            <p style="color:#fff;font-weight:bold;margin:10px 0 6px">SRC平台</p>
+            <p style="color:#888;font-size:12px">补天：butian.net · 漏洞盒子：vulbox.com</p>
+          </div>
+        </div>
+        <div class="progressBar"><div class="progressFill" id="bar"></div></div>
+        <div class="progressText" id="progress">就绪</div>
+        <div id="layerResults"></div>
       </div>
-    </div>
-    <div class="progressBar"><div class="progressFill" id="bar"></div></div>
-    <div class="progressText" id="progress">就绪</div>
-    <div id="layerResults"></div>
+
+      <!-- 靶场练习tab -->
+      <div class="tab" id="tab-quiz">
+        <div class="topBar">
+          <h1>靶场练习</h1>
+          <button class="btnGreen" onclick="newRound()">🎯 新建靶场</button>
+        </div>
+        <div id="quizArea"></div>
+        <div id="quizResult"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -149,15 +189,28 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
 <script>
 var PWD="314314314";
 var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url="];
-function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.remove('show');document.getElementById(id).classList.add('show')}
-function showLogin(){show('loginPage')}
-function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
-function logout(){show('disclaimerPage')}
-function toggleGuide(){var g=document.getElementById('guideBox');g.style.display=g.style.display==='none'?'block':'none'}
-function showTab(t){if(t==='scan'){document.querySelectorAll('.sidebar a').forEach(function(a){a.classList.remove('active')});event.target.classList.add('active')}}
-function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
 
-// ===== 浅层：基础常见路径，低危信息泄露 =====
+function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('appPage').classList.remove('show');document.getElementById(id).classList.add('show')}
+function showLogin(){show('loginPage')}
+function showApp(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('appPage').classList.add('show')}
+function logout(){show('disclaimerPage')}
+function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showApp()}else{document.getElementById('err').textContent='密码错误'}}
+
+function toggleSidebar(){
+  var s=document.getElementById('sidebar');
+  s.classList.toggle('expanded');s.classList.toggle('collapsed');
+  document.getElementById('collapseBtn').textContent=s.classList.contains('expanded')?'◀':'▶';
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.navItem[data-tab]').forEach(function(n){n.classList.toggle('active',n.dataset.tab===tab)});
+}
+
+function toggleGuide(){var g=document.getElementById('guideBox');g.style.display=g.style.display==='none'?'block':'none'}
+
+// ===== 扫描路径 =====
 var L1=[
 "/robots.txt","/sitemap.xml","/favicon.ico","/.well-known/security.txt",
 "/admin","/admin/","/admin/login","/login","/signin","/user/login","/wp-login.php","/wp-admin",
@@ -186,8 +239,6 @@ var L1=[
 "/CHANGELOG.md","/README.md","/LICENSE","/Makefile","/requirements.txt",
 "/composer.lock","/yarn.lock","/package-lock.json"
 ];
-
-// ===== 中层：框架/后台/备份变体，中危 =====
 var L2=[
 "/.git/index","/.git/logs/HEAD","/.git/refs/heads/main","/.git/refs/heads/master","/.git/COMMIT_EDITMSG","/.git/description","/.git/ORIG_HEAD",
 "/.env.development","/.env.bak","/.env.testing","/env.js","/config.js",
@@ -245,8 +296,6 @@ var L2=[
 "/robots.txt.old","/sitemap.xml.old",
 "/crossdomain.xml.bak"
 ];
-
-// ===== 深层：高危/关键目标，实际问题检测 =====
 var L3=[
 {path:"/.git/config",severity:"high",note:"Git仓库配置泄露，可拉取源码"},
 {path:"/.git/HEAD",severity:"high",note:"Git仓库存在，可能泄露全部源码"},
@@ -261,7 +310,7 @@ var L3=[
 {path:"/backup.zip",severity:"high",note:"网站备份"},
 {path:"/actuator/env",severity:"high",note:"Spring Boot环境变量，含密钥"},
 {path:"/actuator/heapdump",severity:"high",note:"堆转储，可提取内存密码"},
-{path:"/.DS_Store",severity:"medium",note:"macOS目录泄露，枚举文件结构"},
+{path:"/.DS_Store",severity:"medium",note:"macOS目录泄露"},
 {path:"/phpinfo.php",severity:"medium",note:"PHP配置信息泄露"},
 {path:"/.htpasswd",severity:"medium",note:"密码哈希文件"},
 {path:"/private.key",severity:"high",note:"私钥泄露"},
@@ -271,28 +320,20 @@ var L3=[
 {path:"/nacos",severity:"high",note:"Nacos配置中心未授权"},
 {path:"/druid/index.html",severity:"high",note:"Druid监控未授权"},
 {path:"/swagger-ui.html",severity:"medium",note:"API文档暴露"},
-{path:"/graphql",severity:"medium",note:"GraphQL端点，可能内省查询"},
+{path:"/graphql",severity:"medium",note:"GraphQL端点"},
 {path:"/_ignition/execute-solution",severity:"high",note:"Laravel Ignition RCE"},
 {path:"/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php",severity:"high",note:"PHPUnit RCE"},
 {path:"/admin",severity:"medium",note:"后台入口"},
 {path:"/phpmyadmin",severity:"medium",note:"数据库管理工具"},
 {path:"/.svn/entries",severity:"medium",note:"SVN仓库泄露"},
 {path:"/WEB-INF/web.xml",severity:"high",note:"Java配置文件泄露"},
-{path:"/actuator/heapdump",severity:"high",note:"内存转储"},
-{path:"/jolokia/list",severity:"high",note:"Jolokia未授权，可RCE"},
-{path:"/jenkins/script",severity:"high",note:"Jenkins脚本控制台，可RCE"},
-{path:"/crossdomain.xml",severity:"low",note:"Flash跨域策略"},
+{path:"/jolokia/list",severity:"high",note:"Jolokia未授权"},
+{path:"/jenkins/script",severity:"high",note:"Jenkins脚本控制台"},
 {path:"/.well-known/security.txt",severity:"info",note:"安全联系信息"},
-{path:"/server-info",severity:"medium",note:"Apache服务器信息"},
 {path:"/env",severity:"high",note:"环境变量端点"},
-{path:"/metrics",severity:"low",note:"监控指标泄露"},
-{path:"/trace",severity:"medium",note:"请求追踪，可看到Cookie"},
-{path:"/dump",severity:"medium",note:"线程转储"},
-{path:"/debug/vars",severity:"medium",note:"Go应用调试变量"},
-{path:"/api-docs",severity:"low",note:"API文档"},
-{path:"/v2/api-docs",severity:"medium",note:"Swagger API文档"},
-{path:"/swagger.json",severity:"medium",note:"Swagger JSON"},
-{path:"/openapi.json",severity:"medium",note:"OpenAPI规范"},
+{path:"/trace",severity:"medium",note:"请求追踪"},
+{path:"/debug/vars",severity:"medium",note:"Go调试变量"},
+{path:"/v2/api-docs",severity:"medium",note:"Swagger文档"},
 {path:"/.htaccess",severity:"low",note:"Apache配置"},
 {path:"/robots.txt",severity:"info",note:"可能暴露隐藏路径"},
 {path:"/sitemap.xml",severity:"info",note:"站点地图"}
@@ -300,37 +341,16 @@ var L3=[
 
 var findings={1:[],2:[],3:[]};
 var fakeTimer=null;
-function startFakeProgress(targetPct){
-  clearInterval(fakeTimer);
-  var cur=parseFloat(document.getElementById('bar').style.width)||0;
-  fakeTimer=setInterval(function(){
-    cur+=0.15;
-    if(cur>=targetPct)cur=targetPct;
-    document.getElementById('bar').style.width=cur+'%';
-  },100);
-}
+function startFakeProgress(tp){clearInterval(fakeTimer);var cur=parseFloat(document.getElementById('bar').style.width)||0;fakeTimer=setInterval(function(){cur+=0.15;if(cur>=tp)cur=tp;document.getElementById('bar').style.width=cur+'%'},100)}
 function stopFakeProgress(){clearInterval(fakeTimer)}
 
 async function checkPath(url){
   for(var i=0;i<PROXIES.length;i++){
-    try{
-      var c=new AbortController();var t=setTimeout(function(){c.abort()},6000);
-      var r=await fetch(PROXIES[i]+encodeURIComponent(url),{signal:c.signal,redirect:'follow'});
-      clearTimeout(t);
-      return {status:r.status,headers:r.headers,text:await r.text().catch(function(){return ''})};
-    }catch(e){}
+    try{var c=new AbortController();var t=setTimeout(function(){c.abort()},6000);var r=await fetch(PROXIES[i]+encodeURIComponent(url),{signal:c.signal,redirect:'follow'});clearTimeout(t);return{status:r.status,headers:r.headers,text:await r.text().catch(function(){return ''})}}catch(e){}
   }
   return null;
 }
-
-function similarity(a,b){
-  if(!a||!b)return 0;
-  a=a.slice(0,500);b=b.slice(0,500);
-  if(a===b)return 1;
-  var s={};for(var i=0;i<a.length;i++)s[a[i]]=1;
-  var c=0;for(var j=0;j<b.length;j++)if(s[b[j]])c++;
-  return c/Math.max(a.length,b.length);
-}
+function similarity(a,b){if(!a||!b)return 0;a=a.slice(0,500);b=b.slice(0,500);if(a===b)return 1;var s={};for(var i=0;i<a.length;i++)s[a[i]]=1;var c=0;for(var j=0;j<b.length;j++)if(s[b[j]])c++;return c/Math.max(a.length,b.length)}
 
 async function runLayer(num){
   var target=document.getElementById('target').value.trim();
@@ -339,96 +359,129 @@ async function runLayer(num){
   var base=target.replace(/\/$/,"");
   document.getElementById('btnAll').disabled=true;
   findings[num]=[];
-  var homeText='';
-  var homeRes=await checkPath(base+'/');
-  if(homeRes)homeText=homeRes.text||'';
-
+  var homeText='';var hr=await checkPath(base+'/');if(hr)homeText=hr.text||'';
   if(num<=2){
-    var paths=num===1?L1:L2;
-    var total=paths.length;
-    var BATCH=50;
+    var paths=num===1?L1:L2;var total=paths.length;var BATCH=50;
     for(var i=0;i<total;i+=BATCH){
-      var batch=paths.slice(i,i+BATCH);
-      var targetPct=Math.min(i+BATCH,total)/total*100;
+      var batch=paths.slice(i,i+BATCH);var tp=Math.min(i+BATCH,total)/total*100;
       document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描中... ('+Math.min(i+BATCH,total)+'/'+total+')';
-      startFakeProgress(targetPct);
+      startFakeProgress(tp);
       var results=await Promise.all(batch.map(async function(p){
         var res=await checkPath(base+p);
         if(!res||res.status!==200)return null;
         var body=res.text||'';
         var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
         if(/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p))return null;
-        // 敏感文件类型不过滤，直接报
         if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.75)return null;
         if(body.length<10)return null;
         if(/404 not found|page not found|页面不存在|找不到此页面/i.test(body.slice(0,500)))return null;
         if(/codetabs|corsproxy|502 bad gateway|503 service/i.test(body.slice(0,300)))return null;
-        // 内容关键词检测——如果body里有敏感内容，直接报高危
-        var bodyLower=body.toLowerCase();
-        var hasSecrets=false;
-        if(bodyLower.indexOf('db_password')>=0||bodyLower.indexOf('db_host')>=0||bodyLower.indexOf('api_key')>=0||bodyLower.indexOf('secret_key')>=0)hasSecrets=true;
-        if(bodyLower.indexOf('private key')>=0||bodyLower.indexOf('-----begin rsa')>=0||bodyLower.indexOf('-----begin private')>=0)hasSecrets=true;
-        if(bodyLower.indexOf('[core]')>=0||bodyLower.indexOf('[remote ')>=0||bodyLower.indexOf('[branch ')>=0)hasSecrets=true;
-        if(bodyLower.indexOf('root:')>=0&&bodyLower.indexOf('x:0:0:')>=0)hasSecrets=true;
-        var sev='low';
-        if(isSensitive||hasSecrets)sev='high';
-        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p))sev='medium';
-        return {path:p,url:base+p,status:res.status,severity:sev};
+        var bl=body.toLowerCase();var hasS=false;
+        if(bl.indexOf('db_password')>=0||bl.indexOf('api_key')>=0||bl.indexOf('secret_key')>=0)hasS=true;
+        if(bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0)hasS=true;
+        if(bl.indexOf('[core]')>=0||bl.indexOf('[remote ')>=0)hasS=true;
+        var sev='low';if(isSensitive||hasS)sev='high';else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p))sev='medium';
+        return{path:p,url:base+p,status:res.status,severity:sev};
       }));
       results.filter(Boolean).forEach(function(r){findings[num].push(r)});
-      stopFakeProgress();
-      document.getElementById('bar').style.width=targetPct+'%';
-      renderLayers();
+      stopFakeProgress();document.getElementById('bar').style.width=tp+'%';renderLayers();
     }
   } else {
-    // 深层：检查高危路径
     var total3=L3.length;
     for(var k=0;k<total3;k++){
       var item=L3[k];
       document.getElementById('progress').textContent='深层检测: '+item.path+' ('+(k+1)+'/'+total3+')';
       startFakeProgress((k+1)/total3*100);
       var res=await checkPath(base+item.path);
-      if(res&&res.status===200){
-        var body=res.text||'';
-        if(body.length<10)continue;
-        if(homeText&&body&&similarity(homeText,body)>0.75)continue;
-        // 深层也检测内容关键词
-        var bl=body.toLowerCase();
-        var extra='';
-        if(bl.indexOf('db_password')>=0)extra=' · 含数据库密码';
-        else if(bl.indexOf('[core]')>=0)extra=' · 确认为Git配置';
-        else if(bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0)extra=' · 确认为私钥';
-        findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note+extra});
-        renderLayers();
-      }
-      document.getElementById('bar').style.width=((k+1)/total3*100)+'%';
-      stopFakeProgress();
+      if(res&&res.status===200){var body=res.text||'';if(body.length>=10&&(!homeText||similarity(homeText,body)<=0.75)){findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note});renderLayers()}}
+      document.getElementById('bar').style.width=((k+1)/total3*100)+'%';stopFakeProgress();
     }
   }
   document.getElementById('progress').textContent=(num===1?'浅层':num===2?'中层':'深层')+'扫描完成';
-  document.getElementById('btnAll').disabled=false;
-  renderLayers();
+  document.getElementById('btnAll').disabled=false;renderLayers();
 }
-
 async function runAll(){await runLayer(1);await runLayer(2);await runLayer(3)}
-
 function renderLayers(){
-  var label={high:'高危',medium:'中危',low:'低危',info:'信息'};
-  var order={high:0,medium:1,low:2,info:3};
-  var names={1:'浅层扫描',2:'中层扫描',3:'深层扫描'};
-  var tags={1:'l1',2:'l2',3:'l3'};
+  var label={high:'高危',medium:'中危',low:'低危',info:'信息'};var order={high:0,medium:1,low:2,info:3};
+  var names={1:'浅层扫描',2:'中层扫描',3:'深层扫描'};var tags={1:'l1',2:'l2',3:'l3'};
   var html='';
-  for(var l=1;l<=3;l++){
-    if(findings[l].length===0)continue;
-    var sorted=findings[l].slice().sort(function(a,b){return(order[a.severity]||9)-(order[b.severity]||9)});
-    html+='<div class="layerTag '+tags[l]+'">'+names[l]+' · '+sorted.length+' 项</div>';
-    for(var i=0;i<sorted.length;i++){
-      var r=sorted[i];
-      html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">'+r.status+(r.note?' · '+r.note:'')+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>';
-    }
-  }
+  for(var l=1;l<=3;l++){if(findings[l].length===0)continue;var sorted=findings[l].slice().sort(function(a,b){return(order[a.severity]||9)-(order[b.severity]||9)});html+='<div class="layerTag '+tags[l]+'">'+names[l]+' · '+sorted.length+' 项</div>';for(var i=0;i<sorted.length;i++){var r=sorted[i];html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">'+r.status+(r.note?' · '+r.note:'')+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>'}}
   if(!html)html='<div style="color:#555;padding:20px;text-align:center">等待扫描...</div>';
   document.getElementById('layerResults').innerHTML=html;
+}
+
+// ===== 靶场练习 =====
+var QUIZ_VULNS=[
+{url:"/.env",sev:"high",desc:"环境变量文件泄露，包含数据库密码、API密钥",why:"开发者配置失误，.env文件不应被Web服务器直接访问"},
+{url:"/.git/config",sev:"high",desc:"Git仓库配置泄露，可拉取整个源码",why:"项目目录没删.git文件夹就部署了"},
+{url:"/.git/HEAD",sev:"high",desc:"Git仓库存在，泄露版本信息",why:".git目录暴露在Web根目录"},
+{url:"/backup.sql",sev:"high",desc:"数据库备份文件，含全部用户数据",why:"运维习惯把备份文件放在Web目录里"},
+{url:"/www.zip",sev:"high",desc:"整站源码打包泄露",why:"打包后忘了删，直接暴露在服务器上"},
+{url:"/phpinfo.php",sev:"med",desc:"PHP配置信息泄露",why:"测试完忘了删phpinfo.php"},
+{url:"/admin",sev:"med",desc:"后台管理入口可直接访问",why:"后台没有IP白名单或VPN限制"},
+{url:"/actuator/env",sev:"high",desc:"Spring Boot环境变量，含密钥",why:"Actuator未配置访问控制"},
+{url:"/actuator/heapdump",sev:"high",desc:"堆转储，可提取内存密码",why:"Actuator端点未保护"},
+{url:"/swagger-ui.html",sev:"med",desc:"API文档暴露",why:"Swagger没加认证"},
+{url:"/graphql",sev:"med",desc:"GraphQL开放内省查询",why:"生产环境没关内省"},
+{url:"/nacos",sev:"high",desc:"Nacos配置中心未授权",why:"默认密码或无认证"},
+{url:"/druid/index.html",sev:"high",desc:"Druid监控面板未授权",why:"没配访问控制"},
+{url:"/.DS_Store",sev:"low",desc:"macOS目录文件泄露",why:"macOS自动生成，部署时没删"},
+{url:"/server-status",sev:"low",desc:"Apache状态页",why:"Apache默认开了mod_status"},
+{url:"/config.php.bak",sev:"high",desc:"配置文件备份，可能含密码",why:"编辑器留下的.bak文件"},
+{url:"/wp-config.php~",sev:"high",desc:"WordPress配置临时备份",why:"vim留下的~文件"},
+{url:"/debug.log",sev:"med",desc:"调试日志含敏感信息",why:"调试模式开着没关"},
+{url:"/console",sev:"med",desc:"调试控制台入口",why:"生产环境没关"},
+{url:"/robots.txt",sev:"safe",desc:"爬虫规则，正常文件",why:"robots.txt本来就是公开的"},
+{url:"/favicon.ico",sev:"safe",desc:"网站图标",why:"浏览器自动请求"},
+{url:"/login",sev:"safe",desc:"登录页面",why:"正常功能"},
+{url:"/sitemap.xml",sev:"safe",desc:"站点地图",why:"SEO需要的公开文件"},
+{url:"/about",sev:"safe",desc:"关于页面",why:"普通静态页面"},
+{url:"/uploads/",sev:"med",desc:"上传目录可列目录",why:"Nginx没关目录浏览"},
+{url:"/vendor/",sev:"med",desc:"依赖库目录暴露",why:"Composer目录在Web根下"},
+{url:"/phpmyadmin",sev:"med",desc:"phpMyAdmin暴露",why:"没改路径也没加认证"},
+{url:"/README.md",sev:"safe",desc:"项目说明文档",why:"GitHub项目本来就是公开的"},
+{url:"/api/v1/health",sev:"safe",desc:"健康检查接口",why:"监控用，不泄露敏感信息"}
+];
+var quizTargets=[];
+var quizHost='';
+
+function pickRand(arr,n){return arr.slice().sort(function(){return Math.random()-0.5}).slice(0,n)}
+
+function newRound(){
+  document.getElementById('quizResult').innerHTML='';
+  document.getElementById('quizArea').innerHTML='<div class="loadingBox">⏳ 正在生成靶场...</div>';
+  setTimeout(function(){
+    var vulns=pickRand(QUIZ_VULNS.filter(function(v){return v.sev!=='safe'}),5);
+    var safes=pickRand(QUIZ_VULNS.filter(function(v){return v.sev==='safe'}),3);
+    quizTargets=vulns.concat(safes).sort(function(){return Math.random()-0.5});
+    quizHost='https://target-'+Math.floor(Math.random()*9999)+'.com';
+    var html='<div class="quizCard"><h3>🎯 新靶场已生成</h3><div class="host">'+quizHost+'</div><p style="color:#888;font-size:12px">勾选你认为有漏洞的页面，然后点提交：</p>';
+    html+='<div class="checkGrid">';
+    quizTargets.forEach(function(t,i){
+      html+='<label class="checkItem"><input type="checkbox" id="qc'+i+'"><span class="url">'+t.url+'</span></label>';
+    });
+    html+='</div>';
+    html+='<div class="quizInputRow"><input type="text" id="quizNote" placeholder="你发现的漏洞说明（选填）"><button onclick="submitQuiz()">提交答案</button></div>';
+    html+='</div>';
+    document.getElementById('quizArea').innerHTML=html;
+  },800);
+}
+
+function submitQuiz(){
+  var score=0;var total=quizTargets.length;var html='<h2 style="color:#4f8cff;margin:20px 0 10px">答案解析</h2>';
+  quizTargets.forEach(function(t,i){
+    var cb=document.getElementById('qc'+i);var checked=cb.checked;var isV=t.sev!=='safe';
+    var right=(checked&&isV)||(!checked&&!isV);if(right)score++;
+    var cls=isV?(checked?'correct':'missed'):(checked?'wrong':'correct');
+    var badge=isV?(checked?'<span class="vulnTag tagHigh">✅ 选对了</span>':'<span class="vulnTag tagMed">⚠️ 漏了</span>'):(checked?'<span class="vulnTag tagHigh" style="background:#ff4757">❌ 误报</span>':'<span class="vulnTag tagLow">✅ 正确</span>');
+    var tag=t.sev==='safe'?'<span class="vulnTag tagSafe">正常</span>':'<span class="vulnTag '+(t.sev==='high'?'tagHigh':t.sev==='med'?'tagMed':'tagLow')+'">'+(t.sev==='high'?'高危':t.sev==='med'?'中危':'低危')+'</span>';
+    html+='<div class="resultBox '+cls+'"><div style="font-family:monospace;font-size:13px">'+t.url+' '+tag+' '+badge+'</div><div class="explain"><b>'+t.desc+'</b><br>原理：'+t.why+'</div></div>';
+  });
+  var pct=Math.round(score/total*100);
+  var sc=pct>=80?'scoreGood':pct>=50?'scoreOk':'scoreBad';
+  var msg=pct>=80?'厉害！可以去实战了':pct>=50?'还不错，多练几轮':'继续练';
+  html='<div class="scoreBig '+sc+'">'+score+'/'+total+' ('+pct+'%)</div><p style="text-align:center;color:#888;margin-bottom:16px">'+msg+'</p>'+html;
+  document.getElementById('quizResult').innerHTML=html;
 }
 </script>
 </body>
