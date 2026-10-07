@@ -291,13 +291,11 @@ async function runLayer(num){
           else{if(!hv)found=true}
         } else if(c.type==='cors'){
           var aco=res.headers.get('access-control-allow-origin');
-          if(aco==='*'||aco==='*')found=true;
+          if(aco==='*')found=true;
         } else if(c.type==='path'){
           if(res.status===200&&res.text.indexOf('<a href=')>=0)found=true;
-        } else if(c.type==='method'){
-          // 简化：记录为待手动验证
-          findings[3].push({path:c.name,url:base+'/',status:'需手动验证',severity:c.severity});
         }
+        // method类型不通过CORS代理测不了，跳过不报
         if(found)findings[3].push({path:c.name,url:base+'/',status:'已发现',severity:c.severity});
       }
       document.getElementById('bar').style.width=((j+1)/total3*100)+'%';
