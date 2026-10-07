@@ -343,7 +343,7 @@ async function runLayer(num){
         var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
         if(/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p))return null;
         // 敏感文件类型不过滤，直接报
-        if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.9)return null;
+        if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.75)return null;
         if(body.length<10)return null;
         if(/404 not found|page not found|页面不存在|找不到此页面/i.test(body.slice(0,500)))return null;
         if(/codetabs|corsproxy|502 bad gateway|503 service/i.test(body.slice(0,300)))return null;
@@ -375,7 +375,7 @@ async function runLayer(num){
       if(res&&res.status===200){
         var body=res.text||'';
         if(body.length<10)continue;
-        if(homeText&&body&&similarity(homeText,body)>0.9)continue;
+        if(homeText&&body&&similarity(homeText,body)>0.75)continue;
         // 深层也检测内容关键词
         var bl=body.toLowerCase();
         var extra='';
