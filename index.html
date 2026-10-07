@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache">
 <title>SRC Scanner</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;color:#e0e0e0}
 .page{display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px}
 .page.show{display:flex}
 .box{background:#1a1d27;padding:30px;border-radius:12px;width:100%;max-width:420px}
 h1{font-size:20px;margin-bottom:20px;text-align:center;color:#fff}
 p{font-size:13px;line-height:1.7;color:#999;margin-bottom:12px}
-input{width:100%;padding:12px;margin-bottom:16px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:16px}
+input{width:100%;padding:12px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:16px;margin-bottom:16px}
 button{padding:12px 24px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;white-space:nowrap}
 button:hover{background:#3a7aef}
 button:disabled{background:#555;cursor:not-allowed}
@@ -23,171 +23,174 @@ button:disabled{background:#555;cursor:not-allowed}
 .err{color:#ff6b6b;text-align:center;margin-top:12px;font-size:14px}
 .disc{background:#11141a;padding:12px;border-radius:8px;font-size:11px;color:#666;line-height:1.7;margin-top:16px;text-align:left}
 .disc b{color:#999}
-
-/* 主界面 */
-#scannerPage{display:none;min-height:100vh;padding:20px;align-items:flex-start;justify-content:center}
-#scannerPage.show{display:flex}
-.wrap{max-width:900px;width:100%;margin:0 auto}
+#scanPage{display:none;min-height:100vh;padding:20px;align-items:flex-start;justify-content:center}
+#scanPage.show{display:flex}
+.wrap{max-width:900px;width:100%}
 .topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.topBar h1{margin:0;text-align:left;font-size:22px}
-.inputRow{display:flex;gap:10px;margin-bottom:20px}
+.topBar h1{margin:0;font-size:22px;color:#fff}
+.inputRow{display:flex;gap:10px;margin-bottom:16px}
 .inputRow input{flex:1;margin-bottom:0}
-.status{margin-bottom:16px;font-size:14px;color:#888}
-.result{background:#1a1d27;border-radius:8px;margin-bottom:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.progressBar{height:4px;background:#222;border-radius:2px;margin-bottom:12px;overflow:hidden}
+.progressFill{height:100%;background:#4f8cff;width:0%;transition:width .3s}
+.progressText{font-size:12px;color:#555;margin-bottom:16px;word-break:break-all}
+.result{background:#1a1d27;border-radius:8px;margin-bottom:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .result.high{border-left:4px solid #ff4757}
 .result.medium{border-left:4px solid #ffa502}
 .result.low{border-left:4px solid #2ed573}
 .result.info{border-left:4px solid #5352ed;opacity:.7}
-.path{font-family:monospace;font-size:14px;word-break:break-all}
-.badge{font-size:12px;padding:2px 8px;border-radius:4px;margin-left:8px;white-space:nowrap}
+.path{font-family:monospace;font-size:13px;word-break:break-all}
+.badge{font-size:11px;padding:2px 6px;border-radius:4px;margin-left:6px;white-space:nowrap}
 .b-high{background:#ff4757;color:#fff}
 .b-medium{background:#ffa502;color:#000}
 .b-low{background:#2ed573;color:#000}
 .b-info{background:#5352ed;color:#fff}
-.meta{font-size:12px;color:#888;margin-top:4px}
-.count{font-size:14px;color:#888;margin-bottom:12px}
-a{color:#4f8cff;text-decoration:none;white-space:nowrap}
-.logoutBtn{font-size:13px;color:#aaa;background:none;border:1px solid #444;padding:6px 12px}
+.meta{font-size:11px;color:#666;margin-top:3px}
+.count{font-size:13px;color:#888;margin-bottom:10px}
+a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
+.logoutBtn{font-size:12px;color:#888;background:none;border:1px solid #444;padding:5px 10px}
 </style>
 </head>
 <body>
 
-<!-- 第一步：免责声明 -->
 <div class="page show" id="disclaimerPage">
   <div class="box">
     <h1>SRC Scanner</h1>
-    <p>本工具为个人安全研究辅助工具，仅用于经授权的漏洞测试。</p>
-    <div class="disc">
-      <b>免责声明</b><br><br>
-      1. 本工具仅用于已获得目标系统所有者书面授权的安全测试与漏洞研究。<br><br>
-      2. 严禁对未授权目标进行任何扫描、探测行为，违者可能违反《网络安全法》等法律法规。<br><br>
-      3. 使用本工具产生的一切后果（数据泄露、服务中断、法律责任、经济损失等）均由使用者自行承担，作者不承担任何责任。<br><br>
-      4. 点击"我已阅读并同意"即表示您已充分理解并接受以上全部条款。
-    </div>
+    <p>个人安全研究辅助工具</p>
+    <div class="disc"><b>免责声明</b><br><br>1. 仅用于已获书面授权的安全测试。<br>2. 严禁扫描未授权目标，违者自负法律责任。<br>3. 使用本工具产生的一切后果由使用者自行承担，作者不承担任何责任。<br>4. 点击同意即表示接受以上条款。</div>
     <div style="margin-top:20px">
-      <button class="btnFull" onclick="agree()">我已阅读并同意</button>
-      <button class="btnFull btnGray" onclick="leave()">离开</button>
+      <button class="btnFull" onclick="showLogin()">我已阅读并同意</button>
+      <button class="btnFull btnGray" onclick="document.body.innerHTML='<div style=min-height:100vh;display:flex;align-items:center;justify-content:center;color:#666>已离开</div>'">离开</button>
     </div>
   </div>
 </div>
 
-<!-- 第二步：登录 -->
 <div class="page" id="loginPage">
   <div class="box">
     <h1>请输入密码</h1>
-    <input type="password" id="pwd" placeholder="输入密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <input type="password" id="pwd" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btnFull" onclick="doLogin()">进 入</button>
     <div class="err" id="err"></div>
   </div>
 </div>
 
-<!-- 第三步：扫描主界面 -->
-<div id="scannerPage">
+<div id="scanPage">
   <div class="wrap">
     <div class="topBar">
       <h1>SRC 自动扫描</h1>
       <button class="logoutBtn" onclick="logout()">退出</button>
     </div>
     <div class="inputRow">
-      <input type="text" id="target" placeholder="输入目标网址，如 https://example.com">
+      <input type="text" id="target" placeholder="目标网址 https://example.com">
       <button onclick="doScan()" id="btn">开始扫描</button>
     </div>
-    <div class="status" id="status"></div>
+    <div class="progressBar"><div class="progressFill" id="bar"></div></div>
+    <div class="progressText" id="progress">就绪</div>
     <div class="count" id="count"></div>
     <div id="results"></div>
   </div>
 </div>
 
 <script>
-var API = "https://src-scanner.cr-tools.workers.dev";
-var savedPwd = localStorage.getItem('src_pwd') || '';
+var API="https://src-scanner.cr-tools.workers.dev";
+var pwd=localStorage.getItem('src_pwd')||'';
+if(pwd)showScan();
 
-function show(id) {
-  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('show'); });
-  document.getElementById('scannerPage').classList.remove('show');
-  document.getElementById(id).classList.add('show');
-}
-function showScanner() {
-  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('show'); });
-  document.getElementById('scannerPage').classList.add('show');
-}
+function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.remove('show');document.getElementById(id).classList.add('show')}
+function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
+function showLogin(){show('loginPage')}
+function logout(){pwd='';localStorage.removeItem('src_pwd');show('disclaimerPage')}
 
-function agree() { show('loginPage'); }
-function leave() {
-  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#666;font-size:16px">您已离开，感谢使用。</div>';
-}
-
-function logout() {
-  savedPwd = '';
-  localStorage.removeItem('src_pwd');
-  show('disclaimerPage');
+async function doLogin(){
+  var p=document.getElementById('pwd').value;
+  document.getElementById('err').textContent='';
+  try{
+    var r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});
+    var d=await r.json();
+    if(d.ok){pwd=p;localStorage.setItem('src_pwd',p);showScan()}
+    else document.getElementById('err').textContent=d.error||'失败';
+  }catch(e){document.getElementById('err').textContent='连接失败';}
 }
 
-// 如果之前登录过，跳过免责声明直接到登录
-if (savedPwd) show('loginPage');
+var PATHS=[
+"/.git/HEAD","/.git/config","/.git/index","/.git/logs/HEAD","/.git/refs/heads/main","/.git/refs/heads/master","/.git/COMMIT_EDITMSG",
+"/.svn/entries","/.hg/store","/CVS/Root",
+"/.env","/.env.local","/.env.production","/.env.development","/.env.bak",
+"/config.php","/config.yml","/config.json","/config.ini","/config.yaml",
+"/application.properties","/application.yml","/application-dev.yml",
+"/web.config","/settings.py","/local_settings.py","/database.yml",
+"/wp-config.php.bak","/wp-config.php~","/wp-config.php.swp",
+"/composer.json","/package.json","/.npmrc","/.pypirc",
+"/docker-compose.yml","/Dockerfile","/.dockerignore","/Jenkinsfile",
+"/backup.sql","/backup.zip","/backup.tar.gz","/backup.rar","/backup.7z",
+"/www.zip","/wwwroot.zip","/web.zip","/site.zip",
+"/database.sql","/db_backup.sql","/db.sql","/dump.sql","/1.sql",
+"/backup2024.sql","/backup2025.sql","/backup2026.sql",
+"/admin.zip","/config.bak","/config.php.bak","/config.php~",
+"/private.key","/server.key","/id_rsa","/.ssh/id_rsa",
+"/credentials.json","/service-account.json","/secrets.json",
+"/.htpasswd","/.htaccess",
+"/admin","/admin/","/admin/login","/admin/index.php",
+"/administrator","/manage","/management",
+"/manager/html","/manager/status",
+"/phpmyadmin","/phpMyAdmin","/pma","/mysql",
+"/wp-admin","/wp-login.php","/user/login","/signin","/console",
+"/nacos","/nacos/v1/auth/users?pageNo=1&pageSize=9",
+"/druid/index.html","/druid/login.html",
+"/jenkins","/jenkins/script","/graphql","/graphiql",
+"/actuator","/actuator/env","/actuator/heapdump","/actuator/beans","/actuator/mappings","/actuator/configprops","/actuator/health",
+"/server-status","/server-info","/status","/health","/healthz",
+"/metrics","/info","/env","/trace","/dump","/jolokia",
+"/debug","/debug/vars","/debug/pprof","/pprof",
+"/phpinfo.php","/info.php","/test.php","/php.php","/i.php",
+"/.well-known/security.txt",
+"/swagger/index.html","/swagger-ui.html","/swagger-ui/","/api-docs","/v2/api-docs","/v3/api-docs","/swagger.json","/redoc","/docs","/api/docs",
+"/access.log","/error.log","/debug.log","/log/error.log","/logs/error.log","/app.log","/application.log",
+"/.DS_Store","/.idea/","/.vscode/","/crossdomain.xml",
+"/sitemap.xml","/robots.txt","/sitemap.xml.gz",
+"/WEB-INF/web.xml","/WEB-INF/classes/","/web-inf/","/META-INF/","/favicon.ico"
+];
 
-async function doLogin() {
-  var pwd = document.getElementById('pwd').value;
-  document.getElementById('err').textContent = '';
-  try {
-    var r = await fetch(API + '/api/login', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({password: pwd})
-    });
-    var d = await r.json();
-    if (d.ok) {
-      savedPwd = pwd;
-      localStorage.setItem('src_pwd', pwd);
-      showScanner();
-    } else {
-      document.getElementById('err').textContent = d.error || '登录失败';
-    }
-  } catch(e) {
-    document.getElementById('err').textContent = '连接失败: ' + e.message;
+var findings=[];
+async function doScan(){
+  var target=document.getElementById('target').value.trim();
+  if(!target){alert('请输入网址');return}
+  if(target.indexOf('http')!==0){alert('请带http://');return}
+  findings=[];
+  document.getElementById('results').innerHTML='';
+  document.getElementById('count').textContent='';
+  document.getElementById('btn').disabled=true;
+  var BATCH=15;
+  var done=0;
+  var total=PATHS.length;
+  for(var i=0;i<total;i+=BATCH){
+    var batch=PATHS.slice(i,i+BATCH);
+    document.getElementById('progress').textContent='正在扫描 '+batch[0]+' ... ('+done+'/'+total+')';
+    try{
+      var r=await fetch(API+'/api/check',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Password':pwd},body:JSON.stringify({target:target,paths:batch})});
+      var d=await r.json();
+      if(d.results&&d.results.length){
+        findings.push.apply(findings,d.results);
+        renderResults();
+      }
+    }catch(e){}
+    done=Math.min(i+BATCH,total);
+    document.getElementById('bar').style.width=(done/total*100)+'%';
   }
+  document.getElementById('progress').textContent='扫描完成，共 '+total+' 个路径';
+  document.getElementById('btn').disabled=false;
 }
 
-async function doScan() {
-  var target = document.getElementById('target').value.trim();
-  if (!target) { alert('请输入网址'); return; }
-  if (target.indexOf('http') !== 0) { alert('请带 http:// 或 https://'); return; }
-  document.getElementById('btn').disabled = true;
-  document.getElementById('status').textContent = '扫描中... 请稍等';
-  document.getElementById('results').innerHTML = '';
-  document.getElementById('count').textContent = '';
-  try {
-    var r = await fetch(API + '/api/scan', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','X-Auth-Password': savedPwd},
-      body: JSON.stringify({target: target})
-    });
-    var d = await r.json();
-    if (d.error) { alert(d.error); }
-    else renderResults(d);
-  } catch(e) {
-    alert('请求失败: ' + e.message);
+function renderResults(){
+  var label={high:'高危',medium:'中危',low:'低危',info:'需认证'};
+  var order={high:0,medium:1,low:2,info:3};
+  findings.sort(function(a,b){return(order[a.severity]||9)-(order[b.severity]||9)});
+  document.getElementById('count').textContent='发现 '+findings.length+' 个非404结果';
+  var html='';
+  for(var i=0;i<findings.length;i++){
+    var r=findings[i];
+    html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">HTTP '+r.status+' · '+r.len+' bytes · '+(r.ct||'').split(';')[0]+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>';
   }
-  document.getElementById('btn').disabled = false;
-  document.getElementById('status').textContent = '扫描完成';
-}
-
-function renderResults(data) {
-  document.getElementById('count').textContent = '发现 ' + data.length + ' 个非404结果';
-  if (!data.length) {
-    document.getElementById('results').innerHTML = '<div style="color:#666;padding:20px">没有发现非404路径</div>';
-    return;
-  }
-  var label = {high:'高危', medium:'中危', low:'低危', info:'需认证'};
-  var html = '';
-  for (var i = 0; i < data.length; i++) {
-    var r = data[i];
-    html += '<div class="result ' + r.severity + '">' +
-      '<div><div class="path">' + r.path + '<span class="badge b-' + r.severity + '">' + (label[r.severity]||'') + '</span></div>' +
-      '<div class="meta">HTTP ' + r.status + ' · ' + r.len + ' bytes · ' + (r.ct||'').split(';')[0] + '</div></div>' +
-      '<a href="' + r.url + '" target="_blank">打开</a></div>';
-  }
-  document.getElementById('results').innerHTML = html;
+  document.getElementById('results').innerHTML=html;
 }
 </script>
 </body>
