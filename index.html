@@ -129,7 +129,7 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
       <div class="navItem" onclick="toggleGuide()"><span class="icon">📚</span><span class="label">学习指南</span></div>
       <div class="navItem" onclick="location.href='https://caesarpc.github.io/caesarbase/main.html'"><span class="icon">🏠</span><span class="label">返回主站</span></div>
       <div class="navItem" onclick="logout()"><span class="icon">🚪</span><span class="label">退出</span></div>
-      <div class="collapseBtn" onclick="toggleSidebar()" id="collapseBtn">◀</div>
+      <div class="collapseBtn" onclick="toggleSidebar()" id="collapseBtn">◀ 收起</div>
     </div>
     <div class="content">
 
@@ -199,7 +199,8 @@ function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showAp
 function toggleSidebar(){
   var s=document.getElementById('sidebar');
   s.classList.toggle('expanded');s.classList.toggle('collapsed');
-  document.getElementById('collapseBtn').textContent=s.classList.contains('expanded')?'◀':'▶';
+  var collapsed=s.classList.contains('collapsed');
+  document.getElementById('collapseBtn').textContent=collapsed?'▶':'◀ 收起';
 }
 
 function switchTab(tab){
@@ -449,38 +450,58 @@ function pickRand(arr,n){return arr.slice().sort(function(){return Math.random()
 
 function newRound(){
   document.getElementById('quizResult').innerHTML='';
-  document.getElementById('quizArea').innerHTML='<div class="loadingBox">⏳ 正在生成靶场...</div>';
+  document.getElementById('quizArea').innerHTML='<div class="loadingBox">⏳ 正在生成靶场，请稍候...</div>';
   setTimeout(function(){
     var vulns=pickRand(QUIZ_VULNS.filter(function(v){return v.sev!=='safe'}),5);
     var safes=pickRand(QUIZ_VULNS.filter(function(v){return v.sev==='safe'}),3);
     quizTargets=vulns.concat(safes).sort(function(){return Math.random()-0.5});
     quizHost='https://target-'+Math.floor(Math.random()*9999)+'.com';
-    var html='<div class="quizCard"><h3>🎯 新靶场已生成</h3><div class="host">'+quizHost+'</div><p style="color:#888;font-size:12px">勾选你认为有漏洞的页面，然后点提交：</p>';
-    html+='<div class="checkGrid">';
-    quizTargets.forEach(function(t,i){
-      html+='<label class="checkItem"><input type="checkbox" id="qc'+i+'"><span class="url">'+t.url+'</span></label>';
-    });
-    html+='</div>';
-    html+='<div class="quizInputRow"><input type="text" id="quizNote" placeholder="你发现的漏洞说明（选填）"><button onclick="submitQuiz()">提交答案</button></div>';
+    var html='<div class="quizCard">';
+    html+='<h3>🎯 新靶场已生成</h3>';
+    html+='<div class="host">'+quizHost+'</div>';
+    html+='<p style="color:#888;font-size:12px;margin-bottom:8px">这是一个随机生成的目标网站，它有若干安全问题。请在下方输入你发现的漏洞路径（每行一个，如 /.env）：</p>';
+    html+='<textarea id="quizAnswer" style="width:100%;height:120px;padding:12px;background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;font-family:monospace;resize:vertical" placeholder="每行输入一个你发现的可疑路径，比如：&#10;/.env&#10;/.git/config&#10;/backup.sql"></textarea>';
+    html+='<div style="margin-top:10px;text-align:right"><button onclick="submitQuiz()">提交答案</button></div>';
     html+='</div>';
     document.getElementById('quizArea').innerHTML=html;
-  },800);
+  },1500);
 }
 
 function submitQuiz(){
-  var score=0;var total=quizTargets.length;var html='<h2 style="color:#4f8cff;margin:20px 0 10px">答案解析</h2>';
-  quizTargets.forEach(function(t,i){
-    var cb=document.getElementById('qc'+i);var checked=cb.checked;var isV=t.sev!=='safe';
-    var right=(checked&&isV)||(!checked&&!isV);if(right)score++;
-    var cls=isV?(checked?'correct':'missed'):(checked?'wrong':'correct');
-    var badge=isV?(checked?'<span class="vulnTag tagHigh">✅ 选对了</span>':'<span class="vulnTag tagMed">⚠️ 漏了</span>'):(checked?'<span class="vulnTag tagHigh" style="background:#ff4757">❌ 误报</span>':'<span class="vulnTag tagLow">✅ 正确</span>');
-    var tag=t.sev==='safe'?'<span class="vulnTag tagSafe">正常</span>':'<span class="vulnTag '+(t.sev==='high'?'tagHigh':t.sev==='med'?'tagMed':'tagLow')+'">'+(t.sev==='high'?'高危':t.sev==='med'?'中危':'低危')+'</span>';
-    html+='<div class="resultBox '+cls+'"><div style="font-family:monospace;font-size:13px">'+t.url+' '+tag+' '+badge+'</div><div class="explain"><b>'+t.desc+'</b><br>原理：'+t.why+'</div></div>';
+  var input=document.getElementById('quizAnswer').value.trim();
+  var userAnswers=input?input.split('\n').map(function(s){return s.trim()}).filter(Boolean):[];
+  var actualVulns=quizTargets.filter(function(t){return t.sev!=='safe'});
+  var correctCount=0;var missed=[];var wrong=[];var correct=[];
+  actualVulns.forEach(function(v){
+    var found=userAnswers.indexOf(v.url)>=0;
+    if(found){correctCount++;correct.push(v)}else{missed.push(v)}
   });
-  var pct=Math.round(score/total*100);
+  userAnswers.forEach(function(u){
+    var isV=actualVulns.some(function(v){return v.url===u});
+    if(!isV)wrong.push(u);
+  });
+  var total=actualVulns.length;
+  var pct=Math.round(correctCount/total*100);
   var sc=pct>=80?'scoreGood':pct>=50?'scoreOk':'scoreBad';
   var msg=pct>=80?'厉害！可以去实战了':pct>=50?'还不错，多练几轮':'继续练';
-  html='<div class="scoreBig '+sc+'">'+score+'/'+total+' ('+pct+'%)</div><p style="text-align:center;color:#888;margin-bottom:16px">'+msg+'</p>'+html;
+  var html='<div class="scoreBig '+sc+'">'+correctCount+'/'+total+' ('+pct+'%)</div>';
+  html+='<p style="text-align:center;color:#888;margin-bottom:16px">'+msg+'</p>';
+  html+='<h2 style="color:#4f8cff;margin:16px 0 10px">✅ 你找对的</h2>';
+  if(correct.length===0)html+='<p style="color:#666;font-size:13px">一个都没找对</p>';
+  correct.forEach(function(v){
+    var tag='<span class="vulnTag '+(v.sev==='high'?'tagHigh':v.sev==='med'?'tagMed':'tagLow')+'">'+(v.sev==='high'?'高危':v.sev==='med'?'中危':'低危')+'</span>';
+    html+='<div class="resultBox correct"><div style="font-family:monospace;font-size:13px">'+v.url+' '+tag+'</div><div class="explain"><b>'+v.desc+'</b><br>原理：'+v.why+'</div></div>';
+  });
+  html+='<h2 style="color:#ffa502;margin:16px 0 10px">⚠️ 你漏掉的</h2>';
+  if(missed.length===0)html+='<p style="color:#666;font-size:13px">全找到了！</p>';
+  missed.forEach(function(v){
+    var tag='<span class="vulnTag '+(v.sev==='high'?'tagHigh':v.sev==='med'?'tagMed':'tagLow')+'">'+(v.sev==='high'?'高危':v.sev==='med'?'中危':'低危')+'</span>';
+    html+='<div class="resultBox missed"><div style="font-family:monospace;font-size:13px">'+v.url+' '+tag+'</div><div class="explain"><b>'+v.desc+'</b><br>原理：'+v.why+'</div></div>';
+  });
+  if(wrong.length>0){
+    html+='<h2 style="color:#ff4757;margin:16px 0 10px">❌ 你误报的（不是漏洞）</h2>';
+    wrong.forEach(function(u){html+='<div class="resultBox wrong"><div style="font-family:monospace;font-size:13px">'+u+'</div><div class="explain">这是正常文件，不是漏洞</div></div>'});
+  }
   document.getElementById('quizResult').innerHTML=html;
 }
 </script>
