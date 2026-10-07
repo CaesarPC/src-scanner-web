@@ -8,18 +8,26 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
-#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-#mainScreen{display:none;padding:20px;max-width:900px;margin:0 auto}
+.page{display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+.page.show{display:flex}
 .box{background:#1a1d27;padding:30px;border-radius:12px;width:100%;max-width:420px}
 h1{font-size:20px;margin-bottom:20px;text-align:center;color:#fff}
+p{font-size:13px;line-height:1.7;color:#999;margin-bottom:12px}
 input{width:100%;padding:12px;margin-bottom:16px;border:1px solid #333;border-radius:8px;background:#0f1117;color:#fff;font-size:16px}
 button{padding:12px 24px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;white-space:nowrap}
 button:hover{background:#3a7aef}
 button:disabled{background:#555;cursor:not-allowed}
-.btnFull{width:100%}
+.btnFull{width:100%;margin-bottom:10px}
+.btnGray{background:#333}
+.btnGray:hover{background:#444}
 .err{color:#ff6b6b;text-align:center;margin-top:12px;font-size:14px}
-.disclaimer{margin-top:20px;padding:12px;background:#11141a;border-radius:8px;font-size:11px;color:#666;line-height:1.6}
-.disclaimer b{color:#999}
+.disc{background:#11141a;padding:12px;border-radius:8px;font-size:11px;color:#666;line-height:1.7;margin-top:16px;text-align:left}
+.disc b{color:#999}
+
+/* 主界面 */
+#scannerPage{display:none;min-height:100vh;padding:20px;align-items:flex-start;justify-content:center}
+#scannerPage.show{display:flex}
+.wrap{max-width:900px;width:100%;margin:0 auto}
 .topBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .topBar h1{margin:0;text-align:left;font-size:22px}
 .inputRow{display:flex;gap:10px;margin-bottom:20px}
@@ -44,55 +52,79 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap}
 </head>
 <body>
 
-<div id="loginScreen">
+<!-- 第一步：免责声明 -->
+<div class="page show" id="disclaimerPage">
   <div class="box">
     <h1>SRC Scanner</h1>
-    <input type="password" id="pwd" placeholder="输入密码" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btnFull" onclick="doLogin()">进 入</button>
-    <div class="err" id="err"></div>
-    <div class="disclaimer">
+    <p>本工具为个人安全研究辅助工具，仅用于经授权的漏洞测试。</p>
+    <div class="disc">
       <b>免责声明</b><br><br>
-      本工具仅用于经授权的安全测试与漏洞研究，使用者必须确保已获得目标系统所有者的书面授权。<br><br>
-      严禁将本工具用于未经授权的扫描、探测或任何可能违反《网络安全法》及相关法律法规的行为。<br><br>
-      使用者在使用本工具过程中产生的一切后果，包括但不限于数据泄露、服务中断、法律责任、经济损失等，均由使用者自行承担，本工具作者不承担任何责任。<br><br>
-      继续使用即表示您已阅读并同意以上条款。
+      1. 本工具仅用于已获得目标系统所有者书面授权的安全测试与漏洞研究。<br><br>
+      2. 严禁对未授权目标进行任何扫描、探测行为，违者可能违反《网络安全法》等法律法规。<br><br>
+      3. 使用本工具产生的一切后果（数据泄露、服务中断、法律责任、经济损失等）均由使用者自行承担，作者不承担任何责任。<br><br>
+      4. 点击"我已阅读并同意"即表示您已充分理解并接受以上全部条款。
+    </div>
+    <div style="margin-top:20px">
+      <button class="btnFull" onclick="agree()">我已阅读并同意</button>
+      <button class="btnFull btnGray" onclick="leave()">离开</button>
     </div>
   </div>
 </div>
 
-<div id="mainScreen">
-  <div class="topBar">
-    <h1>SRC 自动扫描</h1>
-    <button class="logoutBtn" onclick="doLogout()">退出</button>
+<!-- 第二步：登录 -->
+<div class="page" id="loginPage">
+  <div class="box">
+    <h1>请输入密码</h1>
+    <input type="password" id="pwd" placeholder="输入密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btnFull" onclick="doLogin()">进 入</button>
+    <div class="err" id="err"></div>
   </div>
-  <div class="inputRow">
-    <input type="text" id="target" placeholder="输入目标网址，如 https://example.com">
-    <button onclick="doScan()" id="btn">开始扫描</button>
+</div>
+
+<!-- 第三步：扫描主界面 -->
+<div id="scannerPage">
+  <div class="wrap">
+    <div class="topBar">
+      <h1>SRC 自动扫描</h1>
+      <button class="logoutBtn" onclick="logout()">退出</button>
+    </div>
+    <div class="inputRow">
+      <input type="text" id="target" placeholder="输入目标网址，如 https://example.com">
+      <button onclick="doScan()" id="btn">开始扫描</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="count" id="count"></div>
+    <div id="results"></div>
   </div>
-  <div class="status" id="status"></div>
-  <div class="count" id="count"></div>
-  <div id="results"></div>
 </div>
 
 <script>
 var API = "https://src-scanner.cr-tools.workers.dev";
 var savedPwd = localStorage.getItem('src_pwd') || '';
 
-function showMain() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('mainScreen').style.display = 'block';
+function show(id) {
+  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('show'); });
+  document.getElementById('scannerPage').classList.remove('show');
+  document.getElementById(id).classList.add('show');
 }
-function showLogin() {
-  document.getElementById('mainScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
+function showScanner() {
+  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('show'); });
+  document.getElementById('scannerPage').classList.add('show');
 }
-if (savedPwd) showMain();
 
-function doLogout() {
+function agree() { show('loginPage'); }
+function leave() {
+  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#666;font-size:16px">您已离开，感谢使用。</div>';
+}
+
+function logout() {
   savedPwd = '';
   localStorage.removeItem('src_pwd');
-  showLogin();
+  show('disclaimerPage');
 }
+
+// 如果之前登录过，跳过免责声明直接到登录
+if (savedPwd) show('loginPage');
 
 async function doLogin() {
   var pwd = document.getElementById('pwd').value;
@@ -107,7 +139,7 @@ async function doLogin() {
     if (d.ok) {
       savedPwd = pwd;
       localStorage.setItem('src_pwd', pwd);
-      showMain();
+      showScanner();
     } else {
       document.getElementById('err').textContent = d.error || '登录失败';
     }
