@@ -56,11 +56,7 @@ a{color:#4f8cff;text-decoration:none;white-space:nowrap;font-size:13px}
 </style>
 </head>
 <body>
-
-<script>
-// 防iframe嵌套
-if(top!==self){document.body.innerHTML='<div style="padding:20px;color:#666">禁止嵌入</div>';}
-</script>
+<script>if(top!==self){document.body.innerHTML='<div style="padding:20px;color:#666">禁止嵌入</div>'}</script>
 
 <div class="page show" id="disclaimerPage">
   <div class="box">
@@ -94,9 +90,9 @@ if(top!==self){document.body.innerHTML='<div style="padding:20px;color:#666">禁
       <button onclick="runAll()" id="btnAll">全部扫描</button>
     </div>
     <div class="scanBtns">
-      <button onclick="runLayer(1)" id="btn1">浅层扫描</button>
-      <button onclick="runLayer(2)" id="btn2">中层扫描</button>
-      <button onclick="runLayer(3)" id="btn3">深层扫描</button>
+      <button onclick="runLayer(1)" id="btn1">浅层(100)</button>
+      <button onclick="runLayer(2)" id="btn2">中层(150)</button>
+      <button onclick="runLayer(3)" id="btn3">深层(50)</button>
     </div>
     <div class="progressBar"><div class="progressFill" id="bar"></div></div>
     <div class="progressText" id="progress">就绪</div>
@@ -107,107 +103,151 @@ if(top!==self){document.body.innerHTML='<div style="padding:20px;color:#666">禁
 <script>
 var PWD="I(N4z14+hUvz%yT_e&1g&:o9lh(qd]#TJ{Qew;#fcA4K]P;[zEM6,_(?q>Ge4TA;";
 var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url="];
-
 function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.remove('show');document.getElementById(id).classList.add('show')}
 function showLogin(){show('loginPage')}
 function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
 function logout(){show('disclaimerPage')}
 function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
 
-// ===== 浅层扫描（基础敏感路径）=====
+// ===== 浅层：基础常见路径，低危信息泄露 =====
 var L1=[
-"/.git/HEAD","/.git/config","/.git/index","/.git/logs/HEAD","/.git/refs/heads/main","/.git/refs/heads/master",
-"/.svn/entries","/.hg/store","/CVS/Root",
-"/.env","/.env.local","/.env.production","/.env.development",
-"/config.php","/config.yml","/config.json","/config.ini","/config.yaml",
-"/application.properties","/application.yml","/web.config",
-"/wp-config.php.bak","/wp-config.php~","/wp-config.php.swp",
+"/robots.txt","/sitemap.xml","/favicon.ico","/.well-known/security.txt",
+"/admin","/admin/","/admin/login","/login","/signin","/user/login","/wp-login.php","/wp-admin",
+"/.git/HEAD","/.git/config","/.env","/.env.local","/.env.production",
+"/backup.sql","/backup.zip","/www.zip","/database.sql","/db.sql","/1.sql","/dump.sql",
+"/.DS_Store","/crossdomain.xml","/server-status","/server-info",
+"/phpinfo.php","/info.php","/test.php","/php.php","/i.php",
+"/actuator","/actuator/env","/actuator/health","/actuator/heapdump",
+"/swagger-ui.html","/api-docs","/v2/api-docs","/graphql","/graphiql",
+"/api","/api/v1","/api/v2","/docs","/redoc",
+"/console","/manage","/manager/html","/phpmyadmin","/pma","/mysql",
+"/health","/healthz","/status","/metrics","/info","/env","/trace","/dump",
+"/error.log","/access.log","/debug.log","/app.log",
+"/config.php","/config.yml","/config.json","/web.config","/application.properties","/application.yml",
 "/composer.json","/package.json","/.npmrc",
-"/docker-compose.yml","/Dockerfile",
-"/backup.sql","/backup.zip","/backup.tar.gz","/www.zip","/wwwroot.zip","/web.zip","/site.zip",
-"/database.sql","/db.sql","/dump.sql","/1.sql",
-"/admin.zip","/config.bak","/config.php.bak",
-"/private.key","/id_rsa","/credentials.json","/.htpasswd","/.htaccess",
-"/admin","/admin/","/admin/login","/administrator","/manage",
-"/manager/html","/phpmyadmin","/pma","/mysql","/wp-admin","/wp-login.php",
-"/user/login","/signin","/console",
-"/nacos","/druid/index.html","/jenkins","/graphql","/graphiql",
-"/actuator","/actuator/env","/actuator/heapdump",
-"/server-status","/server-info","/health","/healthz",
-"/phpinfo.php","/info.php","/test.php",
-"/swagger-ui.html","/api-docs","/v2/api-docs",
-"/.DS_Store","/robots.txt","/sitemap.xml",
-"/WEB-INF/web.xml","/.well-known/security.txt"
-];
-
-// ===== 中层扫描（更多路径+框架+后台+备份变体）=====
-var L2=[
-// Git深度
-"/.git/COMMIT_EDITMSG","/.git/description","/.git/refs/heads/","/.git/refs/tags/","/.git/ORIG_HEAD",
-// 更多配置
-"/settings.py","/local_settings.py","/database.yml","/settings.json","/config.json.bak",
-"/appsettings.json","/appsettings.Production.json","/package-lock.json","/yarn.lock",
-"/.babelrc","/.eslintrc","/.gitlab-ci.yml","/Jenkinsfile","/.travis.yml",
-// 更多备份
-"/backup.rar","/backup.7z","/backup_old.zip","/backup_new.zip","/backup2023.sql","/backup2024.sql",
-"/db_backup.sql","/database_backup.sql","/data.sql","/old.sql","/copy.sql",
-"/www.tar.gz","/html.zip","/httpdocs.zip","/public.zip",
-"/config.php~","/config.php.swp","/config.old","/config.bak2",
-// 更多后台
-"/adminer.php","/adminer/","/adminer-4.3.0.php",
-"/wp-admin/admin-ajax.php","/wp-content/debug.log",
-"/user/register","/user/forgot","/api/user","/api/admin",
-"/backend","/backstage","/sysadmin","/system/login",
-"/admin123","/loginadmin","/admincp","/adminpanel",
-"/tomcat/manager/html","/weblogic/","/web-console/",
-// 更多框架
-"/thinkphp","/laravel","/laravel/logs","/storage/logs/laravel.log",
-"/vendor/","/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php",
-"/_ignition/health-check","/_ignition/execute-solution",
-// 更多调试端点
-"/actuator/beans","/actuator/mappings","/actuator/configprops","/actuator/loggers","/actuator/threaddump",
-"/jolokia/list","/jolokia/version",
-"/debug/vars","/debug/pprof/","/metrics","/prometheus",
-"/.env.testing","/env.js","/config.js",
-// CMS
-"/wp-content/uploads/","/wp-includes/","/xmlrpc.php",
-"/administrator/manifests/files/joomla.xml",
-"/sites/default/settings.php",
-"/CHANGELOG.md","/README.md","/LICENSE",
-// 更多日志
-"/logs/error.log","/logs/access.log","/error_log","/debug.log","/app.log",
-// API
-"/v1/api","/v2/api","/api/v1/user","/api/v1/config",
-"/graphql/playground","/altair","/graphql.json",
-// 其他
-"/crossdomain.xml","/clientaccesspolicy.xml",
+"/Jenkinsfile","/.gitlab-ci.yml","/.travis.yml","/docker-compose.yml","/Dockerfile",
+"/wp-config.php.bak","/wp-config.php~",
+"/administrator","/backend","/backstage","/system/login",
+"/nacos","/druid/index.html","/jenkins","/weblogic/","/tomcat/manager/html",
+"/.svn/entries","/.hg/store","/CVS/Root",
+"/.htaccess","/.htpasswd","/private.key","/id_rsa",
+"/settings.py","/local_settings.py","/database.yml",
 "/.well-known/openid-configuration","/oauth/authorize",
-"/favicon.ico","/crossdomain.txt",
-"/swagger.json","/openapi.json","/api/swagger.json",
-"/.gitignore","/.dockerignore","/Makefile","/requirements.txt",
-"/composer.lock","/yarn-error.log"
+"/xmlrpc.php","/wp-content/debug.log",
+"/vendor/","/storage/logs/laravel.log",
+"/CHANGELOG.md","/README.md","/LICENSE","/Makefile","/requirements.txt",
+"/composer.lock","/yarn.lock","/package-lock.json"
 ];
 
-// ===== 深层扫描（实际问题检测）=====
-// 这些不是路径探测，而是实际安全检查
+// ===== 中层：框架/后台/备份变体，中危 =====
+var L2=[
+"/.git/index","/.git/logs/HEAD","/.git/refs/heads/main","/.git/refs/heads/master","/.git/COMMIT_EDITMSG","/.git/description","/.git/ORIG_HEAD",
+"/.env.development","/.env.bak","/.env.testing","/env.js","/config.js",
+"/admin/index.php","/admincp","/adminpanel","/admin123","/loginadmin","/sysadmin",
+"/adminer.php","/adminer/","/adminer-4.3.0.php",
+"/wp-admin/admin-ajax.php","/wp-content/uploads/","/wp-includes/",
+"/user/register","/user/forgot","/api/user","/api/admin","/v1/api","/v2/api","/api/v1/user","/api/v1/config",
+"/manage/","/management","/manager/status","/web-console/",
+"/phpMyAdmin","/pma/","/dbadmin","/mysqladmin",
+"/actuator/beans","/actuator/mappings","/actuator/configprops","/actuator/loggers","/actuator/threaddump",
+"/jolokia/list","/jolokia/version","/jolokia",
+"/debug","/debug/vars","/debug/pprof","/pprof","/prometheus",
+"/swagger/index.html","/swagger-ui/","/v3/api-docs","/swagger.json","/openapi.json","/api/swagger.json",
+"/graphql/playground","/altair","/graphql.json",
+"/backup.rar","/backup.7z","/backup.tar.gz","/backup_old.zip","/backup_new.zip",
+"/backup2023.sql","/backup2024.sql","/backup2025.sql","/db_backup.sql","/database_backup.sql",
+"/data.sql","/old.sql","/copy.sql","/www.tar.gz","/html.zip","/httpdocs.zip","/public.zip",
+"/web.zip","/site.zip","/wwwroot.zip","/admin.zip","/config.bak","/config.php.bak","/config.php~","/config.php.swp","/config.old",
+"/server.key","/credentials.json","/service-account.json","/secrets.json",
+"/appsettings.json","/appsettings.Production.json","/settings.json",
+"/.babelrc","/.eslintrc","/.dockerignore",
+"/thinkphp","/laravel","/laravel/logs",
+"/_ignition/health-check","/_ignition/execute-solution",
+"/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php",
+"/sites/default/settings.php","/administrator/manifests/files/joomla.xml",
+"/crossdomain.txt","/clientaccesspolicy.xml",
+"/logs/error.log","/logs/access.log","/error_log","/log/error.log","/logs/",
+"/tmp/","/upload/","/uploads/","/files/","/static/","/public/",
+"/backup/","/bak/","/old/","/temp/","/test/","/tests/",
+"/.idea/","/.vscode/","/.gitignore",
+"/WEB-INF/web.xml","/WEB-INF/classes/","/web-inf/","/META-INF/",
+"/.git/refs/tags/","/.git/refs/heads/",
+"/composer.phar","/artisan","/server.js","/app.js","/index.js",
+"/sitemap.xml.gz","/robots.txt.bak",
+"/login.html","/login.php","/admin.html","/admin.php",
+"/register","/signup","/forgot-password","/reset-password",
+"/api/login","/api/register","/api/user/info","/api/config",
+"/status.html","/health.html","/monitor","/dashboard",
+"/.env.example","/env.example","/config.sample",
+"/backup.sql.gz","/db.sql.gz","/dump.sql.gz",
+"/admin/index.html","/admin/dashboard","/admin/system",
+"/phpmyadmin/","/pma/index.php","/mysql/",
+"/.git/HEAD.bak","/config.json.bak","/config.yml.bak",
+"/error","/404","/500","/403",
+"/.well-known/","/.well-known/openid-configuration",
+"/oauth/token","/oauth/token/info","/.well-known/jwks.json",
+"/actuator/prometheus","/actuator/metrics","/actuator/logfile",
+"/nacos/v1/auth/users?pageNo=1&pageSize=9","/druid/login.html",
+"/jenkins/script","/jenkins/asynchPeople/",
+"/swagger","/api-docs/json","/api/swagger",
+"/.git/config.bak","/database.yml.bak","/settings.py.bak",
+"/backup/backup.sql","/backup/database.sql","/backup/db.sql",
+"/old/admin/","/test/admin/","/dev/admin/",
+"/api/health","/api/status","/api/version","/api/info",
+"/robots.txt.old","/sitemap.xml.old",
+"/crossdomain.xml.bak"
+];
+
+// ===== 深层：高危/关键目标，实际问题检测 =====
 var L3=[
-{type:"method",name:"允许PUT方法(可上传文件)",severity:"high"},
-{type:"method",name:"允许DELETE方法",severity:"high"},
-{type:"method",name:"允许TRACE方法(XST)",severity:"medium"},
-{type:"header",name:"缺X-Frame-Options(可被点击劫持)",header:"x-frame-options",severity:"medium"},
-{type:"header",name:"缺HSTS(HTTPS强制)",header:"strict-transport-security",severity:"medium"},
-{type:"header",name:"缺CSP(内容安全策略)",header:"content-security-policy",severity:"low"},
-{type:"header",name:"缺X-Content-Type-Options",header:"x-content-type-options",severity:"low"},
-{type:"header",name:"Server头泄露版本",header:"server",check:"version",severity:"low"},
-{type:"header",name:"X-Powered-By泄露技术栈",header:"x-powered-by",check:"exists",severity:"info"},
-{type:"path",name:"目录列表可能开启",path:"/",check:"dirlisting",severity:"medium"},
-{type:"path",name:"/tmp目录可访问",path:"/tmp/",severity:"low"},
-{type:"path",name:"/upload目录可访问",path:"/upload/",severity:"low"},
-{type:"path",name:"/uploads目录可访问",path:"/uploads/",severity:"low"},
-{type:"path",name:"/files目录可访问",path:"/files/",severity:"low"},
-{type:"cors",name:"CORS配置为*(任意域名可跨域)",severity:"high"},
-{type:"cookie",name:"Cookie缺HttpOnly",severity:"medium"},
-{type:"cookie",name:"Cookie缺Secure标志",severity:"low"},
+{path:"/.git/config",severity:"high",note:"Git仓库配置泄露，可拉取源码"},
+{path:"/.git/HEAD",severity:"high",note:"Git仓库存在，可能泄露全部源码"},
+{path:"/.git/index",severity:"high",note:"Git索引泄露，可枚举文件"},
+{path:"/.env",severity:"high",note:"环境变量泄露，含数据库密码/API密钥"},
+{path:"/.env.production",severity:"high",note:"生产环境密钥泄露"},
+{path:"/backup.sql",severity:"high",note:"数据库备份，含全部用户数据"},
+{path:"/database.sql",severity:"high",note:"数据库dump文件"},
+{path:"/dump.sql",severity:"high",note:"数据库dump文件"},
+{path:"/db.sql",severity:"high",note:"数据库备份"},
+{path:"/www.zip",severity:"high",note:"整站源码打包泄露"},
+{path:"/backup.zip",severity:"high",note:"网站备份"},
+{path:"/actuator/env",severity:"high",note:"Spring Boot环境变量，含密钥"},
+{path:"/actuator/heapdump",severity:"high",note:"堆转储，可提取内存密码"},
+{path:"/.DS_Store",severity:"medium",note:"macOS目录泄露，枚举文件结构"},
+{path:"/phpinfo.php",severity:"medium",note:"PHP配置信息泄露"},
+{path:"/.htpasswd",severity:"medium",note:"密码哈希文件"},
+{path:"/private.key",severity:"high",note:"私钥泄露"},
+{path:"/id_rsa",severity:"high",note:"SSH私钥"},
+{path:"/credentials.json",severity:"high",note:"凭证文件"},
+{path:"/server-status",severity:"medium",note:"Apache状态页"},
+{path:"/nacos",severity:"high",note:"Nacos配置中心未授权"},
+{path:"/druid/index.html",severity:"high",note:"Druid监控未授权"},
+{path:"/swagger-ui.html",severity:"medium",note:"API文档暴露"},
+{path:"/graphql",severity:"medium",note:"GraphQL端点，可能内省查询"},
+{path:"/_ignition/execute-solution",severity:"high",note:"Laravel Ignition RCE"},
+{path:"/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php",severity:"high",note:"PHPUnit RCE"},
+{path:"/admin",severity:"medium",note:"后台入口"},
+{path:"/phpmyadmin",severity:"medium",note:"数据库管理工具"},
+{path:"/.svn/entries",severity:"medium",note:"SVN仓库泄露"},
+{path:"/WEB-INF/web.xml",severity:"high",note:"Java配置文件泄露"},
+{path:"/actuator/heapdump",severity:"high",note:"内存转储"},
+{path:"/jolokia/list",severity:"high",note:"Jolokia未授权，可RCE"},
+{path:"/jenkins/script",severity:"high",note:"Jenkins脚本控制台，可RCE"},
+{path:"/crossdomain.xml",severity:"low",note:"Flash跨域策略"},
+{path:"/.well-known/security.txt",severity:"info",note:"安全联系信息"},
+{path:"/server-info",severity:"medium",note:"Apache服务器信息"},
+{path:"/env",severity:"high",note:"环境变量端点"},
+{path:"/metrics",severity:"low",note:"监控指标泄露"},
+{path:"/trace",severity:"medium",note:"请求追踪，可看到Cookie"},
+{path:"/dump",severity:"medium",note:"线程转储"},
+{path:"/debug/vars",severity:"medium",note:"Go应用调试变量"},
+{path:"/api-docs",severity:"low",note:"API文档"},
+{path:"/v2/api-docs",severity:"medium",note:"Swagger API文档"},
+{path:"/swagger.json",severity:"medium",note:"Swagger JSON"},
+{path:"/openapi.json",severity:"medium",note:"OpenAPI规范"},
+{path:"/.htaccess",severity:"low",note:"Apache配置"},
+{path:"/robots.txt",severity:"info",note:"可能暴露隐藏路径"},
+{path:"/sitemap.xml",severity:"info",note:"站点地图"}
 ];
 
 var findings={1:[],2:[],3:[]};
@@ -224,14 +264,13 @@ async function checkPath(url){
   return null;
 }
 
-// 简单文本相似度：比较前500字符的共同字符比例
 function similarity(a,b){
   if(!a||!b)return 0;
   a=a.slice(0,500);b=b.slice(0,500);
   if(a===b)return 1;
-  var setA={};for(var i=0;i<a.length;i++)setA[a[i]]=1;
-  var common=0;for(var j=0;j<b.length;j++)if(setA[b[j]])common++;
-  return common/Math.max(a.length,b.length);
+  var s={};for(var i=0;i<a.length;i++)s[a[i]]=1;
+  var c=0;for(var j=0;j<b.length;j++)if(s[b[j]])c++;
+  return c/Math.max(a.length,b.length);
 }
 
 async function runLayer(num){
@@ -241,8 +280,6 @@ async function runLayer(num){
   var base=target.replace(/\/$/,"");
   document.getElementById('btnAll').disabled=true;
   findings[num]=[];
-
-  // 先抓主页作为对比基准
   var homeText='';
   var homeRes=await checkPath(base+'/');
   if(homeRes)homeText=homeRes.text||'';
@@ -258,17 +295,15 @@ async function runLayer(num){
         var res=await checkPath(base+p);
         if(!res||res.status!==200)return null;
         var body=res.text||'';
-        // 敏感文件类型不做软404过滤，直接报
-        var isSensitiveFile=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
-        // GitHub Pages默认文件跳过
+        var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
         if(/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p))return null;
-        if(!isSensitiveFile&&homeText&&body&&similarity(homeText,body)>0.85)return null;
+        if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.85)return null;
         if(body.length<20)return null;
-        if(/404 not found|page not found|页面不存在|找不到页面|404错误/i.test(body.slice(0,1000)))return null;
-        if(/codetabs|corsproxy|cors proxy|502 bad gateway|503/i.test(body.slice(0,500)))return null;
+        if(/404 not found|page not found|页面不存在|找不到/i.test(body.slice(0,1000)))return null;
+        if(/codetabs|corsproxy|502 bad gateway|503/i.test(body.slice(0,500)))return null;
         var sev='low';
-        if(/\.(sql|zip|tar\.gz|rar|7z|key|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('heapdump')>=0||p.indexOf('credentials')>=0) sev='high';
-        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p)) sev='medium';
+        if(isSensitive)sev='high';
+        else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p))sev='medium';
         return {path:p,url:base+p,status:res.status,severity:sev};
       }));
       results.filter(Boolean).forEach(function(r){findings[num].push(r)});
@@ -276,46 +311,31 @@ async function runLayer(num){
       renderLayers();
     }
   } else {
-    // 深层扫描：实际安全检查
+    // 深层：检查高危路径
     var total3=L3.length;
-    for(var j=0;j<L3.length;j++){
-      var c=L3[j];
-      document.getElementById('progress').textContent='深层检测: '+c.name+' ('+(j+1)+'/'+total3+')';
-      var res=await checkPath(base+'/');
-      if(res){
-        var found=false;
-        if(c.type==='header'){
-          var hv=res.headers.get(c.header);
-          if(c.check==='version'){if(hv&&/\d/.test(hv))found=true}
-          else if(c.check==='exists'){if(hv)found=true}
-          else{if(!hv)found=true}
-        } else if(c.type==='cors'){
-          var aco=res.headers.get('access-control-allow-origin');
-          if(aco==='*')found=true;
-        } else if(c.type==='path'){
-          if(res.status===200&&res.text.indexOf('<a href=')>=0)found=true;
-        }
-        // method类型不通过CORS代理测不了，跳过不报
-        if(found)findings[3].push({path:c.name,url:base+'/',status:'已发现',severity:c.severity});
+    for(var k=0;k<total3;k++){
+      var item=L3[k];
+      document.getElementById('progress').textContent='深层检测: '+item.path+' ('+(k+1)+'/'+total3+')';
+      var res=await checkPath(base+item.path);
+      if(res&&res.status===200){
+        var body=res.text||'';
+        if(body.length<20)continue;
+        if(homeText&&body&&similarity(homeText,body)>0.85)continue;
+        findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note});
+        renderLayers();
       }
-      document.getElementById('bar').style.width=((j+1)/total3*100)+'%';
-      renderLayers();
+      document.getElementById('bar').style.width=((k+1)/total3*100)+'%';
     }
   }
-
   document.getElementById('progress').textContent=(num===1?'浅层':num===2?'中层':'深层')+'扫描完成';
   document.getElementById('btnAll').disabled=false;
   renderLayers();
 }
 
-async function runAll(){
-  await runLayer(1);
-  await runLayer(2);
-  await runLayer(3);
-}
+async function runAll(){await runLayer(1);await runLayer(2);await runLayer(3)}
 
 function renderLayers(){
-  var label={high:'高危',medium:'中危',low:'低危',info:'需认证'};
+  var label={high:'高危',medium:'中危',low:'低危',info:'信息'};
   var order={high:0,medium:1,low:2,info:3};
   var names={1:'浅层扫描',2:'中层扫描',3:'深层扫描'};
   var tags={1:'l1',2:'l2',3:'l3'};
@@ -326,7 +346,7 @@ function renderLayers(){
     html+='<div class="layerTag '+tags[l]+'">'+names[l]+' · '+sorted.length+' 项</div>';
     for(var i=0;i<sorted.length;i++){
       var r=sorted[i];
-      html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">'+r.status+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>';
+      html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">'+r.status+(r.note?' · '+r.note:'')+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>';
     }
   }
   if(!html)html='<div style="color:#555;padding:20px;text-align:center">等待扫描...</div>';
