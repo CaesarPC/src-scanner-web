@@ -109,6 +109,7 @@ var PWD="I(N4z14+hUvz%yT_e&1g&:o9lh(qd]#TJ{Qew;#fcA4K]P;[zEM6,_(?q>Ge4TA;";
 var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url="];
 
 function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.remove('show');document.getElementById(id).classList.add('show')}
+function showLogin(){show('loginPage')}
 function showScan(){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('scanPage').classList.add('show')}
 function logout(){show('disclaimerPage')}
 function doLogin(){var p=document.getElementById('pwd').value;if(p===PWD){showScan()}else{document.getElementById('err').textContent='密码错误'}}
