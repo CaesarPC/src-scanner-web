@@ -753,6 +753,7 @@ var QUIZ_VULNS=[
 var quizTargets=[];
 var quizHost='';
 function pickRand(arr,n){return arr.slice().sort(function(){return Math.random()-0.5}).slice(0,n)}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function newRound(){
   document.getElementById('quizResult').innerHTML='';
   var vulns=pickRand(QUIZ_VULNS.filter(function(v){return v.sev!=='safe'}),5);
@@ -771,7 +772,7 @@ function newRound(){
     html+='<span class="fn">'+t.url+'</span>';
     html+='<span class="fs">'+sz+'</span>';
     html+='</div>';
-    html+='<div class="pre">'+(t.content||'(无法预览二进制内容)')+'</div>';
+    html+='<div class="pre">'+escapeHtml(t.content||'(无法预览二进制内容)')+'</div>';
     html+='</div>';
   });
   html+='</div>';
