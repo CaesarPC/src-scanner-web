@@ -105,6 +105,22 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
 .checkItem .url{font-family:monospace;font-size:12px;word-break:break-all}
 .loadingBox{text-align:center;padding:40px;color:#4f8cff;font-size:14px}
 .exportRow{display:flex;gap:8px;margin:10px 0 6px;flex-wrap:wrap}
+/* 靶场-可点开模拟站 + 真实靶场外链 */
+.extLink{display:block;background:#11141a;border:1px solid #2a2a3a;border-radius:8px;padding:12px 14px;color:#7ad0ff;text-decoration:none;font-size:14px;margin-bottom:8px}
+.extLink:hover{border-color:#4f8cff;background:#1a1d27}
+.mockHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.mockUrl{font-family:monospace;color:#4f8cff;font-size:13px}
+.mockNote{font-size:12px;color:#888;margin-bottom:12px;line-height:1.7}
+.fileItem{background:#11141a;border:1px solid #2a2a3a;border-radius:8px;margin-bottom:6px;overflow:hidden}
+.fileItem .fileRow{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}
+.fileItem .fileRow:hover{background:#1a1d27}
+.fileItem .fileRow .fn{font-family:monospace;font-size:13px;flex:1;color:#e0e0e0;word-break:break-all}
+.fileItem .fileRow .fs{font-size:11px;color:#555;white-space:nowrap}
+.fileItem input[type=checkbox]{width:16px;height:16px;accent-color:#4f8cff;margin:0;flex-shrink:0}
+.fileItem .pre{display:none;padding:12px;background:#0a0c11;border-top:1px solid #2a2a3a;font-family:monospace;font-size:12px;color:#9ad;white-space:pre-wrap;word-break:break-all}
+.fileItem.open .pre{display:block}
+.hintBar{font-size:12px;color:#ffa502;margin-top:8px;min-height:16px}
+.hintBar b{color:#fff}
 </style>
 </head>
 <body>
@@ -208,12 +224,22 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
 
       <!-- 靶场练习tab -->
       <div class="tab" id="tab-quiz">
-        <div class="topBar">
-          <h1>靶场练习</h1>
+        <div class="cfgBox" style="border-color:#2a3a4a">
+          <h3>🖥️ 内置模拟靶场</h3>
+          <p style="font-size:12px;color:#888;margin:0 0 10px">生成一个可点开的模拟站。点击文件打开查看真实内容，勾选你认为属于「敏感信息泄露」的文件（如 .env、数据库备份、源码包）。</p>
           <button class="btnGreen" onclick="newRound()">🎯 新建靶场</button>
         </div>
         <div id="quizArea"></div>
         <div id="quizResult"></div>
+        <div class="cfgBox" style="border-color:#3a2a4a;margin-top:16px">
+          <h3>🌐 真实靶场（外链）</h3>
+          <p style="font-size:12px;color:#888;margin:0 0 10px">在真实靶机上练习，浏览器直接打，内容更接近实战。</p>
+          <a class="extLink" href="https://portswigger.net/web-security" target="_blank">🛡️ PortSwigger Web Security Academy（免费 · 首选）</a>
+          <a class="extLink" href="https://tryhackme.com" target="_blank">🌍 TryHackMe</a>
+          <a class="extLink" href="https://pentesterlab.com" target="_blank">🧪 PentesterLab</a>
+          <a class="extLink" href="https://github.com/digininja/DVWA" target="_blank">📦 DVWA（本地 Docker：docker pull vulnerables/web-dvwa）</a>
+          <a class="extLink" href="https://github.com/juice-shop/juice-shop" target="_blank">🧃 OWASP Juice Shop（docker pull bkimminich/juice-shop）</a>
+        </div>
       </div>
 
       <!-- 设置tab -->
@@ -692,95 +718,108 @@ function downloadBlob(blob,name){
   setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
 }
 
-/* ===== 靶场练习 ===== */
+/* ===== 靶场练习（可点开的模拟站） ===== */
 var QUIZ_VULNS=[
-{url:"/.env",sev:"high",desc:"环境变量文件泄露，包含数据库密码、API密钥",why:"开发者配置失误，.env文件不应被Web服务器直接访问"},
-{url:"/.git/config",sev:"high",desc:"Git仓库配置泄露，可拉取整个源码",why:"项目目录没删.git文件夹就部署了"},
-{url:"/.git/HEAD",sev:"high",desc:"Git仓库存在，泄露版本信息",why:".git目录暴露在Web根目录"},
-{url:"/backup.sql",sev:"high",desc:"数据库备份文件，含全部用户数据",why:"运维习惯把备份文件放在Web目录里"},
-{url:"/www.zip",sev:"high",desc:"整站源码打包泄露",why:"打包后忘了删，直接暴露在服务器上"},
-{url:"/phpinfo.php",sev:"med",desc:"PHP配置信息泄露",why:"测试完忘了删phpinfo.php"},
-{url:"/admin",sev:"med",desc:"后台管理入口可直接访问",why:"后台没有IP白名单或VPN限制"},
-{url:"/actuator/env",sev:"high",desc:"Spring Boot环境变量，含密钥",why:"Actuator未配置访问控制"},
-{url:"/actuator/heapdump",sev:"high",desc:"堆转储，可提取内存密码",why:"Actuator端点未保护"},
-{url:"/swagger-ui.html",sev:"med",desc:"API文档暴露",why:"Swagger没加认证"},
-{url:"/graphql",sev:"med",desc:"GraphQL开放内省查询",why:"生产环境没关内省"},
-{url:"/nacos",sev:"high",desc:"Nacos配置中心未授权",why:"默认密码或无认证"},
-{url:"/druid/index.html",sev:"high",desc:"Druid监控面板未授权",why:"没配访问控制"},
-{url:"/.DS_Store",sev:"low",desc:"macOS目录文件泄露",why:"macOS自动生成，部署时没删"},
-{url:"/server-status",sev:"low",desc:"Apache状态页",why:"Apache默认开了mod_status"},
-{url:"/config.php.bak",sev:"high",desc:"配置文件备份，可能含密码",why:"编辑器留下的.bak文件"},
-{url:"/wp-config.php~",sev:"high",desc:"WordPress配置临时备份",why:"vim留下的~文件"},
-{url:"/debug.log",sev:"med",desc:"调试日志含敏感信息",why:"调试模式开着没关"},
-{url:"/console",sev:"med",desc:"调试控制台入口",why:"生产环境没关"},
-{url:"/robots.txt",sev:"safe",desc:"爬虫规则，正常文件",why:"robots.txt本来就是公开的"},
-{url:"/favicon.ico",sev:"safe",desc:"网站图标",why:"浏览器自动请求"},
-{url:"/login",sev:"safe",desc:"登录页面",why:"正常功能"},
-{url:"/sitemap.xml",sev:"safe",desc:"站点地图",why:"SEO需要的公开文件"},
-{url:"/about",sev:"safe",desc:"关于页面",why:"普通静态页面"},
-{url:"/uploads/",sev:"med",desc:"上传目录可列目录",why:"Nginx没关目录浏览"},
-{url:"/vendor/",sev:"med",desc:"依赖库目录暴露",why:"Composer目录在Web根下"},
-{url:"/phpmyadmin",sev:"med",desc:"phpMyAdmin暴露",why:"没改路径也没加认证"},
-{url:"/README.md",sev:"safe",desc:"项目说明文档",why:"GitHub项目本来就是公开的"},
-{url:"/api/v1/health",sev:"safe",desc:"健康检查接口",why:"监控用，不泄露敏感信息"}
+{url:"/.env",sev:"high",desc:"环境变量文件泄露，包含数据库密码、API密钥",why:"开发者配置失误，.env文件不应被Web服务器直接访问",content:"DB_PASSWORD=TestPass123\nDB_HOST=mysql.internal\nDB_USER=root\nAPI_KEY=sk_live_abcdef123456789\nSECRET_TOKEN=supersecretvalue"},
+{url:"/.git/config",sev:"high",desc:"Git仓库配置泄露，可拉取整个源码",why:"项目目录没删.git文件夹就部署了",content:"[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n[remote \"origin\"]\n\turl = git@github.com:dev/project.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*"},
+{url:"/.git/HEAD",sev:"high",desc:"Git仓库存在，泄露版本信息",why:".git目录暴露在Web根目录",content:"ref: refs/heads/main"},
+{url:"/backup.sql",sev:"high",desc:"数据库备份文件，含全部用户数据",why:"运维习惯把备份文件放在Web目录里",content:"-- MySQL dump 10.13\nCREATE TABLE users (id INT, name TEXT, password_hash TEXT);\nINSERT INTO users VALUES (1,'admin','$2y$10$Xk2Z...'),(2,'test','$2y$10$Ab1...');\n-- Dump completed"},
+{url:"/www.zip",sev:"high",desc:"整站源码打包泄露",why:"打包后忘了删，直接暴露在服务器上",content:"（二进制压缩包：包含 index.php / config.php / app/ 等整站源码，可下载解压）"},
+{url:"/phpinfo.php",sev:"med",desc:"PHP配置信息泄露",why:"测试完忘了删phpinfo.php",content:"PHP Version 8.1.10\nSystem: Linux web01 5.15\nLoaded Modules: mysqli, curl, gd...\nEnvironment: DATABASE_URL=mysql://root:***@db:3306/app"},
+{url:"/admin",sev:"med",desc:"后台管理入口可直接访问",why:"后台没有IP白名单或VPN限制",content:"<form action=\"/admin/login\">\n  用户名 <input name=\"user\">\n  密码   <input type=\"password\" name=\"pwd\">\n  <button>登录</button>\n</form>"},
+{url:"/actuator/env",sev:"high",desc:"Spring Boot环境变量，含密钥",why:"Actuator未配置访问控制",content:"{\"contexts\":{\"application\":{\"propertySources\":[{\"name\":\"application.properties\",\"properties\":{\"db.password\":{\"value\":\"root123\"},\"api.secret\":{\"value\":\"sk-prod-9f2\"}}}]}}}"},
+{url:"/actuator/heapdump",sev:"high",desc:"堆转储，可提取内存密码",why:"Actuator端点未保护",content:"（二进制 .hprof 堆转储文件，内存中含明文密码、token，可下载分析）"},
+{url:"/swagger-ui.html",sev:"med",desc:"API文档暴露",why:"Swagger没加认证",content:"Swagger UI — API 文档\n\nGET  /v1/users      获取用户列表\nPOST /v1/orders     创建订单\nGET  /v1/admin/config 管理配置"},
+{url:"/graphql",sev:"med",desc:"GraphQL开放内省查询",why:"生产环境没关内省",content:"{ \"data\": { \"__schema\": { \"types\": [ { \"name\": \"Query\" }, { \"name\": \"User\" } ] } } }"},
+{url:"/nacos",sev:"high",desc:"Nacos配置中心未授权",why:"默认密码或无认证",content:"Nacos 配置中心\n{\"username\":\"nacos\",\"password\":\"nacos\"}\n命名空间: public · 配置列表可见"},
+{url:"/druid/index.html",sev:"high",desc:"Druid监控面板未授权",why:"没配访问控制",content:"Druid 监控面板\nSQL 执行列表 / 会话列表 / 数据源连接信息\n/user/list  # 已访问的用户"}
+,{url:"/.DS_Store",sev:"low",desc:"macOS目录文件泄露",why:"macOS自动生成，部署时没删",content:"（二进制 .DS_Store：记录目录内文件名列表，可还原目录结构）"},
+{url:"/server-status",sev:"low",desc:"Apache状态页",why:"Apache默认开了mod_status",content:"Apache Server Status\nServer Uptime: 12 days\nRequests/Sec: 3.4\nActive workers: 8"},
+{url:"/config.php.bak",sev:"high",desc:"配置文件备份，可能含密码",why:"编辑器留下的.bak文件",content:"<?php\n$db_host = \"localhost\";\n$db_user = \"webapp\";\n$db_pass = \"root\";\n$secret  = \"a1b2c3d4\";"},
+{url:"/wp-config.php~",sev:"high",desc:"WordPress配置临时备份",why:"vim留下的~文件",content:"<?php\ndefine('DB_NAME','wordpress');\ndefine('DB_USER','wp_user');\ndefine('DB_PASSWORD','wp_pass_123');\ndefine('AUTH_KEY','Vk#2...');"},
+{url:"/debug.log",sev:"med",desc:"调试日志含敏感信息",why:"调试模式开着没关",content:"2026-09-01 12:00:12 ERROR: SQLSTATE[28000] Access denied for user 'app'@'db'\n2026-09-01 12:01:05 INFO: 用户 admin 登录成功，session=eyJhbGci..."},
+{url:"/console",sev:"med",desc:"调试控制台入口",why:"生产环境没关",content:"交互式调试控制台\n输入代码执行：python> __import__('os').system('whoami')\n结果：www-data"},
+{url:"/robots.txt",sev:"safe",desc:"爬虫规则，正常文件",why:"robots.txt本来就是公开的",content:"User-agent: *\nDisallow: /admin\nDisallow: /backup\nDisallow: /private"},
+{url:"/favicon.ico",sev:"safe",desc:"网站图标",why:"浏览器自动请求",content:"（ico 图标二进制，浏览器自动请求，无敏感信息）"},
+{url:"/login",sev:"safe",desc:"登录页面",why:"正常功能",content:"<form action=\"/login\">\n  邮箱 <input name=\"email\">\n  密码 <input type=\"password\" name=\"pwd\">\n  <button>登录</button>\n</form>\n<!-- 正常登录功能 -->"},
+{url:"/sitemap.xml",sev:"safe",desc:"站点地图",why:"SEO需要的公开文件",content:"<?xml version=\"1.0\"?>\n<urlset>\n  <url><loc>/about</loc></url>\n  <url><loc>/contact</loc></url>\n  <url><loc>/products</loc></url>\n</urlset>"},
+{url:"/about",sev:"safe",desc:"关于页面",why:"普通静态页面",content:"<!DOCTYPE html>\n<h1>关于我们</h1>\n<p>公司成立于2015年，主营业务...</p>"},
+{url:"/uploads/",sev:"med",desc:"上传目录可列目录",why:"Nginx没关目录浏览",content:"Index of /uploads\n\n20240101_photo.jpg\n20240102_report.pdf\n20240103_data.xlsx"},
+{url:"/vendor/",sev:"med",desc:"依赖库目录暴露",why:"Composer目录在Web根下",content:"Index of /vendor\n\npsr/log/\nmonolog/\nsymfony/polyfill-php80/"},
+{url:"/phpmyadmin",sev:"med",desc:"phpMyAdmin暴露",why:"没改路径也没加认证",content:"phpMyAdmin 登录\n服务器: localhost\n用户名/密码输入框\n（未做访问限制）"},
+{url:"/README.md",sev:"safe",desc:"项目说明文档",why:"GitHub项目本来就是公开的",content:"# My Project\n\n这是一个演示项目\n\n## 技术栈\n- PHP 8\n- MySQL\n\n（开源项目说明，公开内容）"},
+{url:"/api/v1/health",sev:"safe",desc:"健康检查接口",why:"监控用，不泄露敏感信息",content:"{\"status\":\"ok\",\"uptime\":123456,\"version\":\"1.2.0\"}"}
 ];
 var quizTargets=[];
 var quizHost='';
 function pickRand(arr,n){return arr.slice().sort(function(){return Math.random()-0.5}).slice(0,n)}
 function newRound(){
   document.getElementById('quizResult').innerHTML='';
-  document.getElementById('quizArea').innerHTML='<div class="loadingBox">⏳ 正在生成靶场，请稍候...</div>';
-  setTimeout(function(){
-    var vulns=pickRand(QUIZ_VULNS.filter(function(v){return v.sev!=='safe'}),5);
-    var safes=pickRand(QUIZ_VULNS.filter(function(v){return v.sev==='safe'}),3);
-    quizTargets=vulns.concat(safes).sort(function(){return Math.random()-0.5});
-    quizHost='https://target-'+Math.floor(Math.random()*9999)+'.com';
-    var html='<div class="quizCard">';
-    html+='<h3>🎯 新靶场已生成</h3>';
-    html+='<div class="host">'+quizHost+'</div>';
-    html+='<p style="color:#888;font-size:12px;margin-bottom:8px">这是一个随机生成的目标网站，它有若干安全问题。请在下方输入你发现的漏洞路径（每行一个，如 /.env）：</p>';
-    html+='<textarea id="quizAnswer" style="width:100%;height:120px;padding:12px;background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;font-family:monospace;resize:vertical" placeholder="每行输入一个你发现的可疑路径，比如：&#10;/.env&#10;/.git/config&#10;/backup.sql"></textarea>';
-    html+='<div style="margin-top:10px;text-align:right"><button onclick="submitQuiz()">提交答案</button></div>';
+  var vulns=pickRand(QUIZ_VULNS.filter(function(v){return v.sev!=='safe'}),5);
+  var safes=pickRand(QUIZ_VULNS.filter(function(v){return v.sev==='safe'}),3);
+  quizTargets=vulns.concat(safes).sort(function(){return Math.random()-0.5});
+  quizHost='mock-'+Math.floor(1000+Math.random()*9000)+'.site';
+  var html='<div class="quizCard">';
+  html+='<div class="mockHeader"><h3 style="margin:0">🖥️ 模拟目标站</h3><span class="mockUrl">https://'+quizHost+'/</span></div>';
+  html+='<p class="mockNote">下面是这个站根目录里的 <b style="color:#fff">'+quizTargets.length+'</b> 个文件。点击文件行可<b style="color:#7ad0ff">打开查看内容</b>。请勾选你认为属于「敏感信息泄露」的文件（如 .env、数据库备份、源码包等），然后提交判断。</p>';
+  html+='<div id="mockFiles">';
+  quizTargets.forEach(function(t,i){
+    var sz=(Math.random()*2.8+0.3).toFixed(1)+'KB';
+    html+='<div class="fileItem" id="fi'+i+'">';
+    html+='<div class="fileRow" onclick="toggleFile('+i+')">';
+    html+='<input type="checkbox" class="qfile" data-i="'+i+'" onclick="event.stopPropagation()">';
+    html+='<span class="fn">'+t.url+'</span>';
+    html+='<span class="fs">'+sz+'</span>';
     html+='</div>';
-    document.getElementById('quizArea').innerHTML=html;
-  },1500);
+    html+='<div class="pre">'+(t.content||'(无法预览二进制内容)')+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='<div class="hintBar" id="quizHint"></div>';
+  html+='<div style="margin-top:12px;text-align:right"><button class="btnGreen" onclick="submitQuiz()">提交判断</button> <button class="btnGray" onclick="newRound()">换一批</button></div>';
+  html+='</div>';
+  document.getElementById('quizArea').innerHTML=html;
+}
+function toggleFile(i){
+  var el=document.getElementById('fi'+i);
+  if(el)el.classList.toggle('open');
 }
 function submitQuiz(){
-  var input=document.getElementById('quizAnswer').value.trim();
-  var userAnswers=input?input.split('\n').map(function(s){return s.trim()}).filter(Boolean):[];
-  var actualVulns=quizTargets.filter(function(t){return t.sev!=='safe'});
-  var correctCount=0;var missed=[];var wrong=[];var correct=[];
-  actualVulns.forEach(function(v){
-    var found=userAnswers.indexOf(v.url)>=0;
-    if(found){correctCount++;correct.push(v)}else{missed.push(v)}
-  });
-  userAnswers.forEach(function(u){
-    var isV=actualVulns.some(function(v){return v.url===u});
-    if(!isV)wrong.push(u);
-  });
-  var total=actualVulns.length;
-  var pct=Math.round(correctCount/total*100);
+  var cbs=document.querySelectorAll('.qfile');
+  var picked=[];
+  cbs.forEach(function(cb){if(cb.checked)picked.push(parseInt(cb.dataset.i))});
+  var sensIdx=[];
+  quizTargets.forEach(function(t,i){if(t.sev!=='safe')sensIdx.push(i)});
+  var correct=[],missed=[],wrong=[];
+  sensIdx.forEach(function(i){if(picked.indexOf(i)>=0)correct.push(quizTargets[i]);else missed.push(quizTargets[i])});
+  picked.forEach(function(i){if(sensIdx.indexOf(i)<0)wrong.push(quizTargets[i])});
+  var total=sensIdx.length;
+  var pct=Math.round(correct.length/total*100);
   var sc=pct>=80?'scoreGood':pct>=50?'scoreOk':'scoreBad';
   var msg=pct>=80?'厉害！可以去实战了':pct>=50?'还不错，多练几轮':'继续练';
-  var html='<div class="scoreBig '+sc+'">'+correctCount+'/'+total+' ('+pct+'%)</div>';
+  var html='<div class="scoreBig '+sc+'">'+correct.length+'/'+total+' ('+pct+'%)</div>';
   html+='<p style="text-align:center;color:#888;margin-bottom:16px">'+msg+'</p>';
   html+='<h2 style="color:#4f8cff;margin:16px 0 10px">✅ 你找对的</h2>';
   if(correct.length===0)html+='<p style="color:#666;font-size:13px">一个都没找对</p>';
   correct.forEach(function(v){
-    var tag='<span class="vulnTag '+(v.sev==='high'?'tagHigh':v.sev==='med'?'tagMed':'tagLow')+'">'+(v.sev==='high'?'高危':v.sev==='med'?'中危':'低危')+'</span>';
+    var tag='<span class="vulnTag '+(v.sev==='high'?'tagHigh':'tagMed')+'">'+(v.sev==='high'?'高危':'中危')+'</span>';
     html+='<div class="resultBox correct"><div style="font-family:monospace;font-size:13px">'+v.url+' '+tag+'</div><div class="explain"><b>'+v.desc+'</b><br>原理：'+v.why+'</div></div>';
   });
   html+='<h2 style="color:#ffa502;margin:16px 0 10px">⚠️ 你漏掉的</h2>';
   if(missed.length===0)html+='<p style="color:#666;font-size:13px">全找到了！</p>';
   missed.forEach(function(v){
-    var tag='<span class="vulnTag '+(v.sev==='high'?'tagHigh':v.sev==='med'?'tagMed':'tagLow')+'">'+(v.sev==='high'?'高危':v.sev==='med'?'中危':'低危')+'</span>';
+    var tag='<span class="vulnTag '+(v.sev==='high'?'tagHigh':'tagMed')+'">'+(v.sev==='high'?'高危':'中危')+'</span>';
     html+='<div class="resultBox missed"><div style="font-family:monospace;font-size:13px">'+v.url+' '+tag+'</div><div class="explain"><b>'+v.desc+'</b><br>原理：'+v.why+'</div></div>';
   });
   if(wrong.length>0){
-    html+='<h2 style="color:#ff4757;margin:16px 0 10px">❌ 你误报的（不是漏洞）</h2>';
-    wrong.forEach(function(u){html+='<div class="resultBox wrong"><div style="font-family:monospace;font-size:13px">'+u+'</div><div class="explain">这是正常文件，不是漏洞</div></div>'});
+    html+='<h2 style="color:#ff4757;margin:16px 0 10px">❌ 你误判的（其实是正常文件）</h2>';
+    wrong.forEach(function(v){
+      html+='<div class="resultBox wrong"><div style="font-family:monospace;font-size:13px">'+v.url+'</div><div class="explain">'+(v.desc||'正常文件')+'</div></div>';
+    });
   }
   document.getElementById('quizResult').innerHTML=html;
+  var hint=document.getElementById('quizHint');
+  if(hint)hint.innerHTML='提示：敏感泄露通常来自 <b>.env / .git / 备份文件 / 配置文件备份 / 调试日志</b>，点开文件看内容判断最准。';
 }
 </script>
 </body>
