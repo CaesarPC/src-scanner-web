@@ -53,6 +53,7 @@ button:disabled{background:#555;cursor:not-allowed}
 .progressBar{height:4px;background:#222;border-radius:2px;margin-bottom:8px;overflow:hidden}
 .progressFill{height:100%;background:#4f8cff;width:0%;transition:width .3s}
 .progressText{font-size:11px;color:#444;margin-bottom:16px;word-break:break-all;min-height:16px}
+.progressText.done{color:#2ed573;font-weight:bold;font-size:13px}
 .result{background:#1a1d27;border-radius:8px;margin-bottom:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .result.high{border-left:4px solid #ff4757}
 .result.medium{border-left:4px solid #ffa502}
@@ -97,6 +98,22 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
 </head>
 <body>
 <script>if(top!==self){document.body.innerHTML='<div style="padding:20px;color:#666">禁止嵌入</div>'}</script>
+<script>
+/* ===== 入口守卫：直接从地址栏/外部进入时，引导回主站，防止绕过主站直接进子页面 ===== */
+(function(){
+  try{
+    var MAIN='caesarpc.github.io';
+    var ref=document.referrer||'';
+    var ok=false;
+    if(ref){try{var h=new URL(ref).hostname;if(h===MAIN||h==='localhost')ok=true}catch(e){}}
+    if(!ok){
+      var style='body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}*{box-sizing:border-box}.g{background:#1a1d27;border-radius:12px;padding:36px;max-width:480px;width:100%;text-align:center;border:1px solid #2a2a3a}.g .ic{font-size:42px;margin-bottom:8px}.g h1{font-size:22px;color:#fff;margin:0 0 14px}.g p{font-size:14px;line-height:1.9;color:#aaa;margin:0 0 22px;text-align:left}.g b{color:#ccc}.g a{display:inline-block;background:#4f8cff;color:#fff;text-decoration:none;padding:12px 30px;border-radius:8px;font-size:15px;font-weight:600}.g a:hover{background:#3a7aef}';
+      var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>访问引导 · CaesarBase</title><style>'+style+'</style></head><body><div class="g"><div class="ic">🔐</div><h1>访问引导</h1><p><b>为什么看到此页面？</b><br>您可能是在地址栏直接输入了本页面的网址。<br>本页面是 CaesarBase 主站的附属工具页面，仅供从主站入口进入使用。<br>为避免误入非官方入口，请返回 CaesarBase 主站。</p><a href="https://caesarpc.github.io/">返回 CaesarBase 主站</a></div></body></html>';
+      document.open();document.write(h);document.close();
+    }
+  }catch(e){}
+})();
+</script>
 
 <div class="page show" id="disclaimerPage">
   <div class="box">
@@ -188,7 +205,7 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
 
 <script>
 var PWD="314314314";
-var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url="];
+var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url=","https://api.allorigins.win/raw?url="];
 
 function show(id){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('show')});document.getElementById('appPage').classList.remove('show');document.getElementById(id).classList.add('show')}
 function showLogin(){show('loginPage')}
@@ -341,73 +358,103 @@ var L3=[
 ];
 
 var findings={1:[],2:[],3:[]};
-var fakeTimer=null;
-function startFakeProgress(tp){clearInterval(fakeTimer);var cur=parseFloat(document.getElementById('bar').style.width)||0;fakeTimer=setInterval(function(){cur+=0.15;if(cur>=tp)cur=tp;document.getElementById('bar').style.width=cur+'%'},100)}
-function stopFakeProgress(){clearInterval(fakeTimer)}
+var scanFinished=false;  // 全局标记：是否已完成某层扫描（用于结果区文案）
+var lastLayerName='';
 
 async function checkPath(url){
   for(var i=0;i<PROXIES.length;i++){
-    try{var c=new AbortController();var t=setTimeout(function(){c.abort()},6000);var r=await fetch(PROXIES[i]+encodeURIComponent(url),{signal:c.signal,redirect:'follow'});clearTimeout(t);return{status:r.status,headers:r.headers,text:await r.text().catch(function(){return ''})}}catch(e){}
+    try{var c=new AbortController();var t=setTimeout(function(){c.abort()},8000);var r=await fetch(PROXIES[i]+encodeURIComponent(url),{signal:c.signal,redirect:'follow'});clearTimeout(t);return{status:r.status,headers:r.headers,text:await r.text().catch(function(){return ''})}}catch(e){}
   }
   return null;
 }
 function similarity(a,b){if(!a||!b)return 0;a=a.slice(0,500);b=b.slice(0,500);if(a===b)return 1;var s={};for(var i=0;i<a.length;i++)s[a[i]]=1;var c=0;for(var j=0;j<b.length;j++)if(s[b[j]])c++;return c/Math.max(a.length,b.length)}
+
+// 进度与状态统一更新：按真实完成数
+function setStatus(msg,isDone){
+  var p=document.getElementById('progress');
+  p.textContent=msg;
+  p.classList.toggle('done',!!isDone);
+}
 
 async function runLayer(num){
   var target=document.getElementById('target').value.trim();
   if(!target){alert('请输入网址');return}
   if(target.indexOf('http')!==0){alert('请带http://');return}
   var base=target.replace(/\/$/,"");
+  var layerName=num===1?'浅层':num===2?'中层':'深层';
+  lastLayerName=layerName;
   document.getElementById('btnAll').disabled=true;
+  document.getElementById('btn1').disabled=true;document.getElementById('btn2').disabled=true;document.getElementById('btn3').disabled=true;
   findings[num]=[];
+  scanFinished=false;
+  renderLayers();
+  var bar=document.getElementById('bar');
+  bar.style.width='0%';
+
+  // 抓首页，用于相似度过滤（降低误报）
   var homeText='';var hr=await checkPath(base+'/');if(hr)homeText=hr.text||'';
+
   if(num<=2){
-    var paths=num===1?L1:L2;var total=paths.length;var BATCH=50;
-    for(var i=0;i<total;i+=BATCH){
-      var batch=paths.slice(i,i+BATCH);var tp=Math.min(i+BATCH,total)/total*100;
-      document.getElementById('progress').textContent=(num===1?'浅层':'中层')+'扫描中... ('+Math.min(i+BATCH,total)+'/'+total+')';
-      startFakeProgress(tp);
-      var results=await Promise.all(batch.map(async function(p){
-        var res=await checkPath(base+p);
-        if(!res||res.status!==200)return null;
-        var body=res.text||'';
-        var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
-        if(/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p))return null;
-        if(!isSensitive&&homeText&&body&&similarity(homeText,body)>0.75)return null;
-        if(body.length<10)return null;
-        if(/404 not found|page not found|页面不存在|找不到此页面/i.test(body.slice(0,500)))return null;
-        if(/codetabs|corsproxy|502 bad gateway|503 service/i.test(body.slice(0,300)))return null;
-        var bl=body.toLowerCase();var hasS=false;
-        if(bl.indexOf('db_password')>=0||bl.indexOf('api_key')>=0||bl.indexOf('secret_key')>=0)hasS=true;
-        if(bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0)hasS=true;
-        if(bl.indexOf('[core]')>=0||bl.indexOf('[remote ')>=0)hasS=true;
-        var sev='low';if(isSensitive||hasS)sev='high';else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p))sev='medium';
-        return{path:p,url:base+p,status:res.status,severity:sev};
-      }));
-      results.filter(Boolean).forEach(function(r){findings[num].push(r)});
-      stopFakeProgress();document.getElementById('bar').style.width=tp+'%';renderLayers();
+    var paths=num===1?L1:L2;var total=paths.length;
+    var done=0;
+    var CONC=num===1?20:15;  // 控制并发，避免公共代理限流
+    var idx=0;
+    function tick(){
+      done++;
+      var pct=Math.round(done/total*100);
+      bar.style.width=pct+'%';
+      setStatus(layerName+'扫描中... '+done+'/'+total+' ('+pct+'%)');
     }
+    async function worker(){
+      while(idx<paths.length){
+        var p=paths[idx++];
+        var res=await checkPath(base+p);
+        if(res&&res.status===200){
+          var body=res.text||'';
+          var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0;
+          if(!/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p)&&body.length>=10){
+            if(!/404 not found|page not found|页面不存在|找不到此页面/i.test(body.slice(0,500))&&!/codetabs|corsproxy|allorigins|502 bad gateway|503 service/i.test(body.slice(0,300))){
+              var diffHome=(!isSensitive)&&homeText&&body&&similarity(homeText,body)>0.75;
+              if(!diffHome){
+                var bl=body.toLowerCase();
+                var hasS=bl.indexOf('db_password')>=0||bl.indexOf('api_key')>=0||bl.indexOf('secret_key')>=0||bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0||bl.indexOf('[core]')>=0||bl.indexOf('[remote ')>=0;
+                var sev='low';if(isSensitive||hasS)sev='high';else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic/i.test(p))sev='medium';
+                findings[num].push({path:p,url:base+p,status:res.status,severity:sev});
+              }
+            }
+          }
+        }
+        tick();
+      }
+    }
+    await Promise.all(Array.from({length:Math.min(CONC,paths.length)},worker));
   } else {
-    var total3=L3.length;
+    var total3=L3.length;var done3=0;
     for(var k=0;k<total3;k++){
       var item=L3[k];
-      document.getElementById('progress').textContent='深层检测: '+item.path+' ('+(k+1)+'/'+total3+')';
-      startFakeProgress((k+1)/total3*100);
       var res=await checkPath(base+item.path);
-      if(res&&res.status===200){var body=res.text||'';if(body.length>=10&&(!homeText||similarity(homeText,body)<=0.75)){findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note});renderLayers()}}
-      document.getElementById('bar').style.width=((k+1)/total3*100)+'%';stopFakeProgress();
+      if(res&&res.status===200){var body=res.text||'';if(body.length>=10&&(!homeText||similarity(homeText,body)<=0.75)){findings[3].push({path:item.path,url:base+item.path,status:res.status,severity:item.severity,note:item.note});}}
+      done3++;
+      bar.style.width=Math.round(done3/total3*100)+'%';
+      setStatus(layerName+'检测: '+item.path+' ('+done3+'/'+total3+')');
+      renderLayers();
     }
   }
-  document.getElementById('progress').textContent=(num===1?'浅层':num===2?'中层':'深层')+'扫描完成';
-  document.getElementById('btnAll').disabled=false;renderLayers();
+  bar.style.width='100%';
+  scanFinished=true;
+  var cnt=findings[num]?findings[num].length:0;
+  setStatus('✅ 搜索完成 / '+layerName+' Scan Complete · 发现 '+cnt+' 项',true);
+  document.getElementById('btnAll').disabled=false;
+  document.getElementById('btn1').disabled=false;document.getElementById('btn2').disabled=false;document.getElementById('btn3').disabled=false;
+  renderLayers();
 }
-async function runAll(){await runLayer(1);await runLayer(2);await runLayer(3)}
+async function runAll(){scanFinished=false;await runLayer(1);await runLayer(2);await runLayer(3);scanFinished=true;renderLayers()}
 function renderLayers(){
   var label={high:'高危',medium:'中危',low:'低危',info:'信息'};var order={high:0,medium:1,low:2,info:3};
   var names={1:'浅层扫描',2:'中层扫描',3:'深层扫描'};var tags={1:'l1',2:'l2',3:'l3'};
   var html='';
   for(var l=1;l<=3;l++){if(findings[l].length===0)continue;var sorted=findings[l].slice().sort(function(a,b){return(order[a.severity]||9)-(order[b.severity]||9)});html+='<div class="layerTag '+tags[l]+'">'+names[l]+' · '+sorted.length+' 项</div>';for(var i=0;i<sorted.length;i++){var r=sorted[i];html+='<div class="result '+r.severity+'"><div><div class="path">'+r.path+'<span class="badge b-'+r.severity+'">'+(label[r.severity]||'')+'</span></div><div class="meta">'+r.status+(r.note?' · '+r.note:'')+'</div></div><a href="'+r.url+'" target="_blank">打开</a></div>'}}
-  if(!html)html='<div style="color:#555;padding:20px;text-align:center">等待扫描...</div>';
+  if(!html)html='<div style="color:#555;padding:20px;text-align:center">'+(scanFinished?'✅ 扫描完成 · 未发现明显风险项 / No issues found':'等待扫描...')+'</div>';
   document.getElementById('layerResults').innerHTML=html;
 }
 
