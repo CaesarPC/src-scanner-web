@@ -623,6 +623,7 @@ async function runLayer(num){
   /* 第1-3层：路径扫描 */
   var paths=num===1?L1:num===2?L2:L3;
   var total=paths.length+extraPaths.length;
+  if(subMode==='both')total*=2;
   var done=0;
   var CONC=num===1?CONFIG.conc1:num===2?CONFIG.conc2:CONFIG.conc3;
   var idx=0;
