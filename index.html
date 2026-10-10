@@ -246,7 +246,9 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
 
 <script>
 var PWD="314314314";
-var PROXIES=["https://api.codetabs.com/v1/proxy?quest=","https://corsproxy.io/?url=","https://api.allorigins.win/raw?url="];
+/* 直连优先：很多带 CORS 头的目标（含 GitHub Pages）浏览器可直接 fetch，无需代理。
+   代理兜底：allorigins 为免费 CORS 代理（当前可用）；其余公共代理已失效则不再列入。 */
+var PROXIES=["https://api.allorigins.win/raw?url=","https://api.allorigins.win/get?url="];
 
 /* ===== 可调配置 ===== */
 var CONFIG={conc1:20,conc2:15,conc3:8,timeout:8000,finger:true,headers:true};
@@ -482,8 +484,21 @@ var extraPaths=[];   // 指纹命中后追加的路径
 
 async function checkPath(url,timeout){
   timeout=timeout||CONFIG.timeout;
-  for(var i=0;i<PROXIES.length;i++){
-    try{var c=new AbortController();var t=setTimeout(function(){c.abort()},timeout);var r=await fetch(PROXIES[i]+encodeURIComponent(url),{signal:c.signal,redirect:'follow'});clearTimeout(t);var txt=await r.text().catch(function(){return ''});return{status:r.status,headers:r.headers,text:txt}}catch(e){}
+  var chain=[url];
+  PROXIES.forEach(function(p){chain.push(p+encodeURIComponent(url))});
+  for(var i=0;i<chain.length;i++){
+    try{
+      var c=new AbortController();var t=setTimeout(function(){c.abort()},timeout);
+      var r=await fetch(chain[i],{signal:c.signal,redirect:'follow',mode:'cors'});
+      clearTimeout(t);
+      var txt=await r.text().catch(function(){return ''});
+      var st=r.status;
+      // allorigins /get 接口返回 {contents:...} JSON 包装，需解包
+      if(chain[i].indexOf('/get?url=')>=0&&st===200){
+        try{var j=JSON.parse(txt);if(j&&j.contents!==undefined){txt=j.contents;st=j.status&&j.status.http_code?j.status.http_code:200}}catch(e){}
+      }
+      return {status:st,headers:r.headers,text:txt};
+    }catch(e){}
   }
   return null;
 }
