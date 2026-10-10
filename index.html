@@ -45,6 +45,8 @@ button:disabled{background:#555;cursor:not-allowed}
 .inputRow{display:flex;gap:10px;margin-bottom:12px}
 .inputRow input{flex:1;margin-bottom:0}
 .scanBtns{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.bmOpt{display:block;width:100%;text-align:left;background:#12151d;border:1px solid #2a2d35;border-radius:8px;padding:12px 14px;color:#e0e0e0;font-size:14px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.bmOpt:hover{border-color:#4f8cff;background:#171b26}
 .scanBtns button{font-size:13px;padding:10px 16px}
 .layerTag{font-size:12px;font-weight:bold;margin:16px 0 8px;padding:4px 10px;border-radius:4px;display:inline-block}
 .l1{background:#1a3a2a;color:#2ed573}
@@ -181,13 +183,17 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
         <div class="topBar"><h1>SRC漏洞扫描</h1></div>
         <div class="inputRow">
           <input type="text" id="target" placeholder="目标网址 https://example.com">
-          <button onclick="runAll()" id="btnAll">全部扫描</button>
+          <button onclick="startScan('all')" id="btnAll">全部扫描</button>
+        </div>
+        <div id="previewBox" style="display:none;margin-top:8px;background:#11141a;border:1px solid #2a3a4a;border-radius:8px;padding:10px 12px">
+          <div style="color:#888;font-size:12px;margin-bottom:4px">📋 系统拆解 · 将扫描以下地址：</div>
+          <div id="previewList" style="font-family:monospace;font-size:13px;color:#7ad0ff;line-height:1.7"></div>
         </div>
         <div class="scanBtns">
-          <button onclick="runLayer(1)" id="btn1">浅层</button>
-          <button onclick="runLayer(2)" id="btn2">中层</button>
-          <button onclick="runLayer(3)" id="btn3">深层</button>
-          <button onclick="runLayer(4)" id="btn4">指纹+安全头</button>
+          <button onclick="startScan(1)" id="btn1">浅层</button>
+          <button onclick="startScan(2)" id="btn2">中层</button>
+          <button onclick="startScan(3)" id="btn3">深层</button>
+          <button onclick="startScan(4)" id="btn4">指纹+安全头</button>
         </div>
         <div class="exportRow">
           <button class="btnGreen" onclick="exportJSON()">⬇ 导出JSON</button>
@@ -220,6 +226,19 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
         <div id="layerResults"></div>
       </div>
 
+      <!-- 分支选择遮罩 -->
+      <div id="branchModal" style="position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:none;align-items:center;justify-content:center">
+        <div style="background:#1a1d27;border:1px solid #333;border-radius:12px;padding:22px;max-width:440px;width:90%">
+          <h3 style="color:#fff;margin:0 0 6px">🔀 检测到链接带分支</h3>
+          <p style="color:#aaa;font-size:13px;margin-bottom:6px">你输入：<span id="bmRaw" style="font-family:monospace;color:#8be9fd"></span></p>
+          <p style="color:#aaa;font-size:13px;margin-bottom:16px">这个链接含子路径，想扫描哪里？</p>
+          <button class="bmOpt" onclick="chooseBranch('subpath')"><b>扫子路径下</b><br><span id="bmSub" style="font-family:monospace;color:#7ad0ff;font-weight:normal"></span></button>
+          <button class="bmOpt" onclick="chooseBranch('root')"><b>拆到主域名根扫</b><br><span id="bmRoot" style="font-family:monospace;color:#7ad0ff;font-weight:normal"></span></button>
+          <button class="bmOpt" onclick="chooseBranch('both')"><b>两处都扫</b><br><span style="color:#888;font-weight:normal">子路径 + 主域名根各扫一遍</span></button>
+          <button onclick="cancelBranch()" style="width:100%;margin-top:8px;padding:10px;background:#2a2d35;color:#aaa;border:none;border-radius:8px;cursor:pointer">取消（仅预览，不扫描）</button>
+        </div>
+      </div>
+
       <!-- 靶场练习tab -->
       <div class="tab" id="tab-quiz">
         <div class="cfgBox" style="border-color:#2a3a4a">
@@ -242,6 +261,7 @@ a{color:#4f8cff;text-decoration:none;font-size:13px}
           </div>
           <div class="cfgCheck"><input type="checkbox" id="cfgFinger">框架指纹识别（探测 WordPress/ThinkPHP/Spring 等，命中自动补扫已知风险路径）</div>
           <div class="cfgCheck"><input type="checkbox" id="cfgHeaders">安全响应头检测（X-Frame-Options/CSP/HSTS 等缺失检查）</div>
+          <div class="cfgCheck"><label style="display:block;margin-bottom:6px">子路径扫描策略（目标带子路径时扫哪里）</label><select id="cfgSubpath" style="width:100%;padding:10px;background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff"><option value="subpath">扫用户给的子路径下（如 aabb.a.b/acc/.env）</option><option value="root">拆到主域名根扫（如 aabb.a.b/.env）</option><option value="both">两处都扫（子路径 + 根各扫一遍）</option></select></div>
           <div class="cfgRow"><button class="btnGreen" onclick="saveConfig()">保存设置</button></div>
         </div>
         <div class="cfgBox">
@@ -266,7 +286,7 @@ var PWD="314314314";
 var PROXIES=["https://api.allorigins.win/raw?url=","https://api.allorigins.win/get?url="];
 
 /* ===== 可调配置 ===== */
-var CONFIG={conc1:20,conc2:15,conc3:8,timeout:8000,finger:true,headers:true};
+var CONFIG={conc1:20,conc2:15,conc3:8,timeout:8000,finger:true,headers:true,subpath:'subpath'};
 try{if(localStorage.getItem('src_cfg')){var _c=JSON.parse(localStorage.getItem('src_cfg'));for(var _k in _c)CONFIG[_k]=_c[_k];}}catch(e){}
 function saveConfig(){
   CONFIG.conc1=Math.max(1,parseInt(document.getElementById('cfgConc').value)||20);
@@ -275,6 +295,7 @@ function saveConfig(){
   CONFIG.timeout=Math.max(2000,parseInt(document.getElementById('cfgTimeout').value)||8000);
   CONFIG.finger=document.getElementById('cfgFinger').checked;
   CONFIG.headers=document.getElementById('cfgHeaders').checked;
+  CONFIG.subpath=document.getElementById('cfgSubpath').value;
   try{localStorage.setItem('src_cfg',JSON.stringify(CONFIG));}catch(e){}
   document.getElementById('cfgConc').value=CONFIG.conc1;
   document.getElementById('cfgTimeout').value=CONFIG.timeout;
@@ -564,6 +585,11 @@ async function runLayer(num){
   if(!target){alert('请输入网址');return}
   if(target.indexOf('http')!==0){alert('请带http://');return}
   var base=target.replace(/\/+$/,"");
+  var scanRoot=base;
+  try{var _u=new URL(base);scanRoot=_u.protocol+'//'+_u.host;}catch(e){}
+  var subMode=(scanCtx&&scanCtx.mode)||(CONFIG.subpath||'subpath');
+  if(scanCtx){base=subMode==='root'?scanCtx.root:scanCtx.base;scanRoot=scanCtx.root;}
+  else if(subMode==='root'){base=scanRoot;}
   var layerName=num===1?'浅层':num===2?'中层':num===3?'深层':'指纹+安全头';
   lastLayerName=layerName;
   disableBtns(true);
@@ -603,6 +629,10 @@ async function runLayer(num){
   var queue=[];
   paths.forEach(function(p){queue.push(typeof p==='string'?{path:p}:p)});
   extraPaths.forEach(function(p){queue.push({path:p})});
+  if(subMode==='both'){
+    paths.forEach(function(p){queue.push(typeof p==='string'?{path:p,root:true}:Object.assign({},p,{root:true}))});
+    extraPaths.forEach(function(p){queue.push({path:p,root:true})});
+  }
   function tick(){
     done++;
     var pct=Math.round(done/total*100);
@@ -613,7 +643,8 @@ async function runLayer(num){
     while(idx<queue.length){
       var item=queue[idx++];
       var p=item.path;
-      var res=await checkPath(base+p);
+      var _b=item.root?scanRoot:base;
+      var res=await checkPath(_b+p);
       if(res&&res.status===200){
         var body=res.text||'';
         var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log|sh)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('etc/passwd')>=0||p.indexOf('proc/self')>=0||p.indexOf('id_rsa')>=0;
@@ -627,7 +658,7 @@ async function runLayer(num){
               if(isSensitive||hasS)sev='high';
               else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic|login|backup/i.test(p))sev='medium';
               var note=item.note||'';
-              findings[num].push({path:p,url:base+p,status:res.status,severity:sev,note:note});
+              findings[num].push({path:p,url:_b+p,status:res.status,severity:sev,note:note});
             }
           }
         }
@@ -653,6 +684,53 @@ function disableBtns(d){
   document.getElementById('btn2').disabled=d;
   document.getElementById('btn3').disabled=d;
   document.getElementById('btn4').disabled=d;
+}
+/* ===== 链接拆解 + 分支决策 ===== */
+var scanCtx=null;
+function analyzeTarget(){
+  var t=document.getElementById('target').value.trim();
+  if(!t||t.indexOf('http')!==0)return null;
+  var base=t.replace(/\/+$/,'');
+  var root=base;
+  try{var u=new URL(base);root=u.protocol+'//'+u.host;}catch(e){}
+  return {raw:t,base:base,root:root,hasSub:base!==root};
+}
+function showPreview(items){
+  var box=document.getElementById('previewBox');
+  var lst=document.getElementById('previewList');
+  if(!box||!lst)return;
+  box.style.display='block';
+  lst.innerHTML=items.map(function(x){return '<div>▶ '+x+'</div>'}).join('');
+}
+function startScan(mode){
+  var a=analyzeTarget();
+  if(!a){alert('请输入带 http:// 的目标网址');return}
+  scanCtx={mode:'subpath',base:a.base,root:a.root};
+  showPreview([a.base]);
+  window.__pendingMode=mode;
+  if(a.hasSub){
+    document.getElementById('bmRaw').textContent=a.raw;
+    document.getElementById('bmSub').textContent=a.base;
+    document.getElementById('bmRoot').textContent=a.root;
+    document.getElementById('branchModal').style.display='flex';
+  }else{
+    doScan(mode);
+  }
+}
+function chooseBranch(m){
+  document.getElementById('branchModal').style.display='none';
+  scanCtx.mode=m;
+  var list=m==='both'?[scanCtx.base,scanCtx.root]:[m==='root'?scanCtx.root:scanCtx.base];
+  showPreview(list);
+  doScan(window.__pendingMode);
+}
+function cancelBranch(){
+  document.getElementById('branchModal').style.display='none';
+  showPreview([scanCtx.base]);
+  doScan(window.__pendingMode);
+}
+function doScan(mode){
+  if(mode==='all'){runAll();}else{runLayer(mode);}
 }
 async function runAll(){scanFinished=false;disableBtns(true);await runLayer(1);if(findings[1]&&findings[1].length===0){}await runLayer(2);await runLayer(3);if(CONFIG.finger||CONFIG.headers)await runLayer(4);scanFinished=true;disableBtns(false);renderLayers()}
 
