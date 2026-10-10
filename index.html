@@ -563,7 +563,7 @@ async function runLayer(num){
   var target=document.getElementById('target').value.trim();
   if(!target){alert('请输入网址');return}
   if(target.indexOf('http')!==0){alert('请带http://');return}
-  var base=target.replace(/\/$/,"");
+  var base=target.replace(/\/+$/,"");
   var layerName=num===1?'浅层':num===2?'中层':num===3?'深层':'指纹+安全头';
   lastLayerName=layerName;
   disableBtns(true);
