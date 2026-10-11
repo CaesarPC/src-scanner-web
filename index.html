@@ -999,9 +999,9 @@ function exportReport(){
   downloadBlob(blob,'src-scan-report.txt');
 }
 function downloadBlob(blob,name){
-  /* 移动 iOS Safari 不支持 blob download，降级为弹层复制/长按保存 */
-  var isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-  if(isIOS){
+  /* 移动浏览器(iOS/鸿蒙/安卓)对 blob download 支持差，统一降级为弹层复制 */
+  var isMobile=/Mobi|Android|HarmonyOS|OpenHarmony|iP(hone|ad|od)/.test(navigator.userAgent);
+  if(isMobile){
     blob.text().then(function(text){showExportFallback(text,name)});
     return;
   }
