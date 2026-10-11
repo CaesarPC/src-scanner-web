@@ -286,7 +286,7 @@ var PWD="314314314";
 var PROXIES=["https://api.allorigins.win/raw?url=","https://api.allorigins.win/get?url="];
 
 /* ===== 可调配置 ===== */
-var CONFIG={conc1:20,conc2:15,conc3:8,timeout:8000,finger:true,headers:true,subpath:'subpath'};
+var CONFIG={conc1:20,conc2:15,conc3:8,timeout:8000,finger:true,headers:true,subpath:'subpath',backendUrl:'https://src-scanner.cr-tools.workers.dev',useBackend:true};
 try{if(localStorage.getItem('src_cfg')){var _c=JSON.parse(localStorage.getItem('src_cfg'));for(var _k in _c)CONFIG[_k]=_c[_k];}}catch(e){}
 function saveConfig(){
   CONFIG.conc1=Math.max(1,parseInt(document.getElementById('cfgConc').value)||20);
@@ -538,6 +538,32 @@ async function checkPath(url,timeout){
   }
   return null;
 }
+/* ===== 后端(Cloudflare Worker)批量扫描 ===== */
+async function scanViaBackend(base,paths,conc){
+  var r=await fetch(CONFIG.backendUrl+'/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base:base,paths:paths,conc:conc||20})});
+  if(!r.ok)throw new Error('backend '+r.status);
+  var d=await r.json();
+  if(!d.ok)throw new Error('backend not ok');
+  return d.results||[];
+}
+/* 单条结果判定（与前端直连判定一致），命中则push到findings */
+function judgeHit(p,_b,res,homeText,num,note){
+  if(!res||res.status!==200)return false;
+  var body=res.text||'';
+  var isSensitive=/\.(sql|zip|tar\.gz|rar|7z|key|pem|env|DS_Store|bak|swp|log|sh)$/.test(p)||p.indexOf('.git/')>=0||p.indexOf('.env')>=0||p.indexOf('etc/passwd')>=0||p.indexOf('proc/self')>=0||p.indexOf('id_rsa')>=0;
+  if(/robots\.txt|favicon\.ico|sitemap\.xml|crossdomain/.test(p)||body.length<10)return false;
+  if(/404 not found|page not found|页面不存在|找不到此页面|未找到/i.test(body.slice(0,500)))return false;
+  if(/codetabs|corsproxy|allorigins|502 bad gateway|503 service/i.test(body.slice(0,300)))return false;
+  var diffHome=(!isSensitive)&&homeText&&body&&similarity(homeText,body)>0.75;
+  if(diffHome)return false;
+  var bl=body.toLowerCase();
+  var hasS=bl.indexOf('db_password')>=0||bl.indexOf('api_key')>=0||bl.indexOf('secret_key')>=0||bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0||bl.indexOf('[core]')>=0||bl.indexOf('[remote ')>=0||bl.indexOf('root:x:0')>=0;
+  var sev='low';
+  if(isSensitive||hasS)sev='high';
+  else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic|login|backup/i.test(p))sev='medium';
+  findings[num].push({path:p,url:_b+p,status:res.status,severity:sev,note:note||''});
+  return true;
+}
 function similarity(a,b){if(!a||!b)return 0;a=a.slice(0,500);b=b.slice(0,500);if(a===b)return 1;var s={};for(var i=0;i<a.length;i++)s[a[i]]=1;var c=0;for(var j=0;j<b.length;j++)if(s[b[j]])c++;return c/Math.max(a.length,b.length)}
 
 /* ===== 指纹识别 ===== */
@@ -665,6 +691,32 @@ async function runLayer(num){
         }
       }
       tick();
+    }
+  }
+  /* 后端优先：走 Cloudflare Worker 批量扫描；失败自动回退浏览器直连 */
+  if(CONFIG.useBackend){
+    try{
+      setStatus('☁️ 后端加速探测中...');
+      var batches={};
+      queue.forEach(function(item){var _b=item.root?scanRoot:base;if(!batches[_b])batches[_b]=[];batches[_b].push(item)});
+      for(var _b in batches){
+        var items=batches[_b];
+        for(var bi=0;bi<items.length;bi+=50){
+          var chunk=items.slice(bi,bi+50);
+          var ps=chunk.map(function(x){return x.path});
+          var res=await scanViaBackend(_b,ps,CONC);
+          chunk.forEach(function(item,idx){
+            var rr=res[idx]||{};
+            judgeHit(item.path,_b,{status:rr.status,text:rr.text,finalUrl:rr.finalUrl},homeText,num,item.note);
+            tick();
+          });
+        }
+      }
+      setProg(100);
+      scanFinished=true;finishLayer(num,layerName);renderLayers();
+      return;
+    }catch(e){
+      setStatus('⚠️ 后端不可用，回退浏览器直连...');
     }
   }
   await Promise.all(Array.from({length:Math.min(CONC,queue.length)},worker));
