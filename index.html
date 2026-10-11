@@ -910,7 +910,12 @@ function disableBtns(d){
 var scanCtx=null;
 function analyzeTarget(){
   var t=document.getElementById('target').value.trim();
-  if(!t||t.indexOf('http')!==0)return null;
+  if(!t)return null;
+  /* 自动补全协议：没写 http:// 或 https:// 时默认加 https:// */
+  if(t.indexOf('http://')!==0 && t.indexOf('https://')!==0){
+    t='https://'+t;
+    document.getElementById('target').value=t;
+  }
   var base=t.replace(/\/+$/,'');
   var root=base;
   try{var u=new URL(base);root=u.protocol+'//'+u.host;}catch(e){}
