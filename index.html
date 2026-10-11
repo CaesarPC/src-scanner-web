@@ -999,11 +999,35 @@ function exportReport(){
   downloadBlob(blob,'src-scan-report.txt');
 }
 function downloadBlob(blob,name){
+  /* 移动 iOS Safari 不支持 blob download，降级为弹层复制/长按保存 */
+  var isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(isIOS){
+    blob.text().then(function(text){showExportFallback(text,name)});
+    return;
+  }
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=name;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+}
+function showExportFallback(text,name){
+  var old=document.getElementById('expFallback');if(old)old.remove();
+  var d=document.createElement('div');
+  d.id='expFallback';
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;flex-direction:column;padding:16px;box-sizing:border-box';
+  d.innerHTML='<div style="color:#fff;font-size:15px;margin-bottom:8px">📄 '+name+'<br><span style="color:#888;font-size:12px">手机浏览器不支持直接下载文件，请长按下方文字复制，或点"复制全部"</span></div>'+
+    '<textarea style="flex:1;background:#0d1117;color:#7ad0ff;border:1px solid #30363d;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:none"></textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+    '<button id="cpBtn" style="flex:1;padding:12px;background:#4f8cff;color:#fff;border:none;border-radius:8px;font-size:14px">复制全部</button>'+
+    '<button id="clBtn" style="flex:1;padding:12px;background:#333;color:#fff;border:none;border-radius:8px;font-size:14px">关闭</button></div>';
+  document.body.appendChild(d);
+  d.querySelector('textarea').value=text;
+  d.querySelector('#cpBtn').onclick=function(){
+    d.querySelector('textarea').select();
+    try{document.execCommand('copy');this.textContent='✅ 已复制，去备忘录粘贴';}catch(e){this.textContent='复制失败，请手动长按';}
+  };
+  d.querySelector('#clBtn').onclick=function(){d.remove()};
 }
 
 /* ===== 靶场练习（可点开的模拟站） ===== */
