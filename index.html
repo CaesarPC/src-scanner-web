@@ -520,6 +520,14 @@ var extraPaths=[];   // 指纹命中后追加的路径
 
 async function checkPath(url,timeout){
   timeout=timeout||CONFIG.timeout;
+  /* 靶场虚拟站拦截：若目标是当前 mock-XXXX.site，从靶场内存数据返回文件内容 */
+  if(typeof quizHost!=='undefined' && quizHost && url.indexOf(quizHost)>=0){
+    var path=url.split(quizHost)[1]||'/';
+    var hit=null;
+    for(var qi=0;qi<quizTargets.length;qi++){if(quizTargets[qi].url===path){hit=quizTargets[qi];break}}
+    if(hit){return {status:200,headers:new Headers(),text:hit.content||''}}
+    return {status:404,headers:new Headers(),text:'404 not found'};
+  }
   var chain=[url];
   PROXIES.forEach(function(p){chain.push(p+encodeURIComponent(url))});
   for(var i=0;i<chain.length;i++){
@@ -694,7 +702,8 @@ async function runLayer(num){
     }
   }
   /* 后端优先：走 Cloudflare Worker 批量扫描；失败自动回退浏览器直连 */
-  if(CONFIG.useBackend){
+  var isMockTarget=(typeof quizHost!=='undefined'&&quizHost&&base.indexOf(quizHost)>=0);
+  if(CONFIG.useBackend && !isMockTarget){
     try{
       setStatus('☁️ 后端加速探测中...');
       var batches={};
