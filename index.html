@@ -566,10 +566,19 @@ function judgeHit(p,_b,res,homeText,num,note){
   if(diffHome)return false;
   var bl=body.toLowerCase();
   var hasS=bl.indexOf('db_password')>=0||bl.indexOf('api_key')>=0||bl.indexOf('secret_key')>=0||bl.indexOf('private key')>=0||bl.indexOf('-----begin')>=0||bl.indexOf('[core]')>=0||bl.indexOf('[remote ')>=0||bl.indexOf('root:x:0')>=0;
+  /* 通用密钥正则匹配 */
+  var secretFound=[];
+  for(var spi=0;spi<SECRET_PATTERNS.length;spi++){
+    if(SECRET_PATTERNS[spi].re.test(body))secretFound.push(SECRET_PATTERNS[spi].name);
+  }
+  if(secretFound.length>0)hasS=true;
   var sev='low';
   if(isSensitive||hasS)sev='high';
   else if(/admin|phpmyadmin|swagger|actuator|nacos|druid|jenkins|graphql|console|manager|adminer|tomcat|weblogic|login|backup/i.test(p))sev='medium';
-  findings[num].push({path:p,url:_b+p,status:res.status,severity:sev,note:note||''});
+  var note2=note||'';
+  if(secretFound.length>0)note2='检出: '+secretFound.slice(0,3).join(', ');
+  if(isDirList(body)){sev='medium';note2=(note2?note2+' · ':'')+'目录列表';}
+  findings[num].push({path:p,url:_b+p,status:res.status,severity:sev,note:note2});
   return true;
 }
 function similarity(a,b){if(!a||!b)return 0;a=a.slice(0,500);b=b.slice(0,500);if(a===b)return 1;var s={};for(var i=0;i<a.length;i++)s[a[i]]=1;var c=0;for(var j=0;j<b.length;j++)if(s[b[j]])c++;return c/Math.max(a.length,b.length)}
@@ -613,6 +622,124 @@ async function checkSecurityHeaders(base){
   return miss;
 }
 
+/* ===== CORS 跨域配置检测 ===== */
+async function checkCORS(base){
+  var out=[];
+  try{
+    var r=await fetch(base+'/',{headers:{'Origin':'https://evil.example'},redirect:'manual'});
+    var acao=r.headers.get('access-control-allow-origin');
+    var acac=r.headers.get('access-control-allow-credentials');
+    if(acao){
+      if(acao==='https://evil.example' && acac==='true'){
+        out.push({path:'CORS: 反射恶意Origin+Allow-Credentials',url:base,severity:'high',note:'任意网站可带cookie跨域读取你的数据'});
+      }else if(acao==='*' && acac==='true'){
+        out.push({path:'CORS: 通配*且允许凭据',url:base,severity:'high',note:'ACAO=* 配 ACAC=true 是危险配置'});
+      }else if(acao==='*'){
+        out.push({path:'CORS: 允许任意源(*)',url:base,severity:'low',note:'无凭据时风险较低'});
+      }else if(acao==='https://evil.example'){
+        out.push({path:'CORS: 反射任意Origin',url:base,severity:'medium',note:'服务器反射Origin头，需结合凭据判断'});
+      }
+    }
+  }catch(e){}
+  return out;
+}
+
+/* ===== robots.txt / sitemap.xml 解析 ===== */
+async function checkRobotsSitemap(base){
+  var sens=[];
+  try{
+    var r=await fetch(base+'/robots.txt');
+    if(r.status===200){
+      var t=await r.text();
+      t.split('\n').forEach(function(line){
+        var m=line.match(/Disallow:\s*(\S+)/i);
+        if(m && m[1] && m[1]!=='/' && m[1].length>1)sens.push(m[1]);
+      });
+    }
+  }catch(e){}
+  try{
+    var r2=await fetch(base+'/sitemap.xml');
+    if(r2.status===200){
+      var t2=await r2.text();
+      t2.split(/<loc>/).forEach(function(seg){
+        var u=seg.split('</loc>')[0].trim();
+        if(u && u.indexOf(base)===0){
+          var rest=u.substring(base.length);
+          if(rest && rest!=='/' && rest.length>1)sens.push(rest);
+        }
+      });
+    }
+  }catch(e){}
+  return sens.filter(function(p,i,a){return a.indexOf(p)===i});
+}
+
+/* ===== 敏感信息正则库 ===== */
+var SECRET_PATTERNS=[
+  {re:/AKIA[0-9A-Z]{16}/,name:'AWS Access Key'},
+  {re:/AIza[0-9A-Za-z_\-]{35}/,name:'Google API Key'},
+  {re:/-----BEGIN [A-Z ]*PRIVATE KEY-----/,name:'私钥泄露'},
+  {re:/eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}/,name:'JWT Token'},
+  {re:/(?:192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)/,name:'内网IP'},
+  {re:/password\s*[=:]\s*['"][^'"]{4,}/i,name:'硬编码密码'},
+  {re:/api[_-]?key\s*[=:]\s*['"][^'"]{8,}/i,name:'API Key'},
+  {re:/mongodb(?:\+srv)?:\/\/[^\s"']+/i,name:'MongoDB连接串'},
+  {re:/mysql:\/\/[^\s"']+/i,name:'MySQL连接串'}
+];
+
+/* ===== 目录列表检测 ===== */
+function isDirList(body){
+  return /Index of \/|Parent Directory|<title>Index of/i.test(body||'');
+}
+
+/* ===== HTTP 方法检测 ===== */
+async function checkHTTPMethods(base){
+  var out=[];
+  try{
+    var r=await fetch(base+'/',{method:'OPTIONS'});
+    var allow=r.headers.get('allow')||'';
+    if(/PUT|DELETE|TRACE|MOVE/.test(allow)){
+      out.push({path:'危险HTTP方法开放: '+allow,url:base,severity:'medium',note:'OPTIONS 显示服务器允许 PUT/DELETE/TRACE 等方法'});
+    }
+  }catch(e){}
+  return out;
+}
+
+/* ===== Cookie 安全属性 ===== */
+function checkCookieFlags(headers){
+  var out=[];
+  if(!headers)return out;
+  var setCookie=headers.get('set-cookie');
+  if(setCookie){
+    if(!/httponly/i.test(setCookie))out.push({path:'Cookie 缺 HttpOnly',url:'-',severity:'low',note:'JS可读取cookie，XSS可窃取'});
+    if(!/secure/i.test(setCookie))out.push({path:'Cookie 缺 Secure',url:'-',severity:'low',note:'HTTP明文也会发送cookie'});
+    if(!/samesite/i.test(setCookie))out.push({path:'Cookie 缺 SameSite',url:'-',severity:'low',note:'易被CSRF'});
+  }
+  return out;
+}
+
+/* ===== Source Map 泄露 ===== */
+async function checkSourceMap(base,homeHtml){
+  var out=[];
+  try{
+    var scripts=(homeHtml||'').match(/<script[^>]+src=["']([^"']+)["']/gi)||[];
+    for(var i=0;i<scripts.length && i<10;i++){
+      var m=scripts[i].match(/src=["']([^"']+)["']/i);
+      if(!m)continue;
+      var src=m[1];
+      if(src.indexOf('http')!==0)src=base+'/'+src.replace(/^\//,'');
+      var map=src+'.map';
+      var r=await fetch(map);
+      if(r.status===200){
+        var t=await r.text();
+        if(/sourcesContent|version/.test(t)){
+          out.push({path:'Source Map 泄露: '+map,url:map,severity:'medium',note:'.js.map可还原前端源码，含注释和结构'});
+        }
+      }
+    }
+  }catch(e){}
+  return out;
+}
+
 /* ===== 分层扫描 ===== */
 async function runLayer(num){
   var target=document.getElementById('target').value.trim();
@@ -646,6 +773,37 @@ async function runLayer(num){
       miss.forEach(function(m){findings[4].push({path:'安全头缺失: '+m.h,url:base,status:'-',severity:m.s,note:m.n})});
       if(miss.length>0)setStatus('✅ 安全头检测完成 · 缺失 '+miss.length+' 项',true);
       else setStatus('✅ 安全头检测完成 · 均存在',true);
+    }
+    /* CORS 跨域配置 */
+    setStatus('🌐 检测 CORS 跨域配置...');
+    var cors=await checkCORS(base);
+    cors.forEach(function(f){findings[4].push(Object.assign({status:'-'},f))});
+    /* robots.txt / sitemap.xml 暴露路径 */
+    setStatus('🤖 分析 robots.txt / sitemap.xml...');
+    var rb=await checkRobotsSitemap(base);
+    var sensRb=rb.filter(function(p){return /admin|backup|secret|private|api|config|db|test|dev|old|tmp|internal|shell|sql/i.test(p)});
+    if(sensRb.length>0)findings[4].push({path:'robots/sitemap 暴露敏感路径: '+sensRb.slice(0,6).join(', '),url:base+'/robots.txt',status:'-',severity:'medium',note:'这些路径被规则暴露，可能藏敏感目录'});
+    /* HTTP 方法 */
+    setStatus('🔧 检测 HTTP 方法...');
+    var hm=await checkHTTPMethods(base);
+    hm.forEach(function(f){findings[4].push(Object.assign({status:'-'},f))});
+    /* Cookie 安全属性 */
+    var homeR=await checkPath(base+'/',CONFIG.timeout);
+    if(homeR&&homeR.headers){
+      checkCookieFlags(homeR.headers).forEach(function(f){findings[4].push(Object.assign({url:base,status:'-'},f))});
+    }
+    /* 首页敏感信息泄露 */
+    if(homeR&&homeR.text){
+      var hits=[];
+      for(var sp=0;sp<SECRET_PATTERNS.length;sp++){
+        if(SECRET_PATTERNS[sp].re.test(homeR.text))hits.push(SECRET_PATTERNS[sp].name);
+      }
+      if(hits.length>0)findings[4].push({path:'首页泄露敏感信息: '+[...new Set(hits)].join(', '),url:base,status:200,severity:'high',note:'首页HTML/JS里硬编码了密钥或内网地址'});
+      if(isDirList(homeR.text))findings[4].push({path:'目录列表(Index of)开启',url:base,status:200,severity:'medium',note:'服务器列目录，可遍历下载所有文件'});
+      /* Source Map */
+      setStatus('🗺️ 检测 Source Map 泄露...');
+      var sm=await checkSourceMap(base,homeR.text);
+      sm.forEach(function(f){findings[4].push(Object.assign({status:'-'},f))});
     }
     setProg(100);
     scanFinished=true;
