@@ -1060,7 +1060,18 @@ var QUIZ_VULNS=[
 {url:"/vendor/",sev:"med",desc:"依赖库目录暴露",why:"Composer目录在Web根下",content:"Index of /vendor\n\npsr/log/\nmonolog/\nsymfony/polyfill-php80/"},
 {url:"/phpmyadmin",sev:"med",desc:"phpMyAdmin暴露",why:"没改路径也没加认证",content:"phpMyAdmin 登录\n服务器: localhost\n用户名/密码输入框\n（未做访问限制）"},
 {url:"/README.md",sev:"safe",desc:"项目说明文档",why:"GitHub项目本来就是公开的",content:"# My Project\n\n这是一个演示项目\n\n## 技术栈\n- PHP 8\n- MySQL\n\n（开源项目说明，公开内容）"},
-{url:"/api/v1/health",sev:"safe",desc:"健康检查接口",why:"监控用，不泄露敏感信息",content:"{\"status\":\"ok\",\"uptime\":123456,\"version\":\"1.2.0\"}"}
+{url:"/api/v1/health",sev:"safe",desc:"健康检查接口",why:"监控用，不泄露敏感信息",content:"{\"status\":\"ok\",\"uptime\":123456,\"version\":\"1.2.0\"}"},
+{url:"/docker-compose.yml",sev:"high",desc:"Docker编排配置泄露",why:"部署文件放在Web目录",content:"version: '3'\nservices:\n  db:\n    image: mysql:8.0\n    environment:\n      MYSQL_ROOT_PASSWORD: Sup3rS3cret!"},
+{url:"/.dockerenv",sev:"low",desc:"Docker容器环境标记",why:"容器内文件泄露到宿主机Web",content:"（二进制文件，存在说明当前在Docker容器内）"},
+{url:"/.env.production",sev:"high",desc:"生产环境变量泄露",why:".env.production含生产密钥",content:"DB_HOST=prod-db.internal\nDB_PASS=ProdPass2024!\nREDIS_URL=redis://:ProdRedis@prod-redis:6379"},
+{url:"/xmlrpc.php",sev:"med",desc:"WordPress XML-RPC暴露",why:"可被暴力破解/DDOS",content:"XML-RPC server accepts POST requests only.\n<methodCall><methodName>system.listMethods</methodName></methodCall>"},
+{url:"/wp-admin/",sev:"med",desc:"WordPress后台暴露",why:"未加IP限制/二次验证",content:"登录 — WordPress\n用户名 密码 记住登录\n（爆破工具可批量尝试）"},
+{url:"/.gitignore",sev:"safe",desc:"Git忽略规则",why:"公开配置文件，不泄露敏感信息",content:"node_modules/\n.env\n.DS_Store\n*.log"},
+{url:"/.well-known/security.txt",sev:"safe",desc:"安全研究联系方式",why:"公开的安全联系规范",content:"Contact: security@example.com\nExpires: 2027-01-01T00:00:00.000Z"},
+{url:"/web.config",sev:"med",desc:"IIS配置文件泄露",why:"ASP.NET项目配置暴露",content:"<configuration>\n  <connectionStrings>\n    <add name=\"DB\" connectionString=\"Server=db;User=sa;Password=SaPass!;\"/>\n  </connectionStrings>\n</configuration>"},
+{url:"/cgi-bin/",sev:"med",desc:"CGI目录暴露",why:"可能有老脚本漏洞",content:"Index of /cgi-bin\n\nprintenv\ntest-cgi\nadmin.cgi"},
+{url:"/test/",sev:"med",desc:"测试目录未删除",why:"上线后忘了删测试文件",content:"Index of /test\n\ntest.php  # 输出phpinfo()\ndebug.html\nshell.php  # 一句话后门"},
+{url:"/.htpasswd",sev:"high",desc:"Apache密码哈希文件",why:"可被破解",content:"admin:$apr1$abc$xyz...\ntest:$apr1$def$uvw..."}
 ];
 var quizTargets=[];
 var quizHost='';
