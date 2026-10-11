@@ -742,6 +742,7 @@ async function checkSourceMap(base,homeHtml){
 
 /* ===== 分层扫描 ===== */
 async function runLayer(num){
+  num=parseInt(num);
   var target=document.getElementById('target').value.trim();
   if(!target){alert('请输入网址');return}
   if(target.indexOf('http')!==0){alert('请带http://');return}
